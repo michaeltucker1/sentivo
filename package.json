@@ -1,0 +1,41 @@
+{
+  "name": "sentivo-ui",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/main/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"vite build --config vite.preload.config.ts --watch\" \"wait-on tcp:5173 && electron .\"",
+    "build": "vite build && vite build --config vite.preload.config.ts && tsc -p tsconfig.json",
+    "postinstall": "electron-rebuild"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "better-sqlite3": "^12.4.1",
+    "dotenv": "^17.2.3",
+    "electron": "^38.2.1",
+    "express": "^5.1.0",
+    "googleapis": "^161.0.0",
+    "keytar": "^7.9.0",
+    "open": "^10.2.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.7.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
+    "concurrently": "^9.2.1",
+    "electron-rebuild": "^3.2.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9",
+    "wait-on": "^9.0.1"
+  }
+}
