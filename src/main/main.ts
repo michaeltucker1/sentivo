@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { app, BrowserWindow } from "electron";
 import { registerGoogleDriveIpc } from "./ipc/googleDriveIpc.js";
 import { initializeDatabase } from "./database/db.js";
-import { GoogleDriveIndexer, registerIndexerIpc } from './integrations/googleDrive/googleDriveIndexer.js';
+import { GoogleDriveIndexer } from './integrations/googleDrive/googleDriveIndexer.js';
 
 // Load environment variables first
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -51,17 +51,10 @@ const createWindow = () => {
   }
 };
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   initializeDatabase();
   // Register Google Drive IPC with environment variables
   registerGoogleDriveIpc(googleClientId!, googleClientSecret!);
-
-  const indexer = new GoogleDriveIndexer();
-  indexer.startIndexing();
-
-  indexer.on("progress", (p) => {
-    console.log("Indexed files:", p.indexed, "Page token:", p.lastPageToken);
-  });
 
   createWindow();
   app.on("activate", () => {

@@ -3,6 +3,7 @@ import keytar from 'keytar';
 import crypto from 'crypto';
 import { shell, app } from 'electron';
 import { generateCodeVerifier, generateCodeChallenge } from "../../utils/auth.js";
+import { GoogleDriveIndexer } from './googleDriveIndexer.js';
 
 type Tokens = {
   access_token: string;
@@ -38,7 +39,14 @@ export class GoogleAuth {
     // Exchange the code for tokens
     await this.exchangeCodeForTokens(authCode.code, authCode.redirectUri);
 
-    // tokens saved inside exchangeCodeForTokens
+    const indexer = new GoogleDriveIndexer();
+  
+    indexer.startIndexing().then(() => indexer.pollIncrementalChanges())
+    
+    indexer.on("progress", (p) => {
+      console.log("Indexed files:", p.indexed, "Page token:", p.lastPageToken);
+    });
+  
   }
 
   /** Return a valid access token (refreshes automatically if expired) */

@@ -29,7 +29,8 @@ export function initializeDatabase() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS google_drive_index_state (
       id INTEGER PRIMARY KEY CHECK (id = 1),
-      last_page_token TEXT,
+      last_index_page_token TEXT,
+      last_change_page_token TEXT,
       status TEXT,         -- 'idle' | 'indexing' | 'paused' | 'completed' | 'error'
       indexed_count INTEGER DEFAULT 0,
       updated_at TEXT

@@ -11,7 +11,8 @@ import { GoogleDriveFile } from "../../database/googleDriveIndex.js";
 type IndexStatus = "idle" | "indexing" | "paused" | "completed" | "error";
 interface GoogleDriveIndexState {
     id: number;
-    last_page_token: string | null;
+    last_index_page_token: string | null;
+    last_change_page_token: string | null;
     status: "idle" | "indexing" | "paused" | "completed" | "error";
     indexed_count: number;
     updated_at: string | null;
@@ -47,29 +48,46 @@ export class GoogleDriveIndexer extends EventEmitter {
     // fallback if no row exists yet
     return {
       id: 1,
-      last_page_token: null,
+      last_index_page_token: null,
+      last_change_page_token: null,
       status: "idle",
       indexed_count: 0,
       updated_at: null,
     };
   }
 
-  private updateState(partial: Partial<{ last_page_token: string | null; status: IndexStatus; indexed_count: number; }>) {
+  private updateState(partial: Partial<{ last_index_page_token: string | null; last_change_page_token: string | null; status: IndexStatus; indexed_count: number; }>) {
     // merge with current row and upsert
     const cur = this.getStateRow();
-    const token = partial.last_page_token ?? cur.last_page_token;
+    const indextoken = partial.last_index_page_token ?? cur.last_index_page_token;
+    const changetoken = partial.last_change_page_token ?? cur.last_change_page_token;
     const status = partial.status ?? cur.status;
     const count = typeof partial.indexed_count === "number" ? partial.indexed_count : cur.indexed_count;
     const now = new Date().toISOString();
     getDatabase().prepare(`
-      INSERT INTO google_drive_index_state (id, last_page_token, status, indexed_count, updated_at)
-      VALUES (1, @token, @status, @count, @now)
+      INSERT INTO google_drive_index_state (id, last_index_page_token, last_change_page_token, status, indexed_count, updated_at)
+      VALUES (1, @indextoken, @changetoken, @status, @count, @now)
       ON CONFLICT(id) DO UPDATE SET
-        last_page_token=@token,
+        last_index_page_token=@indextoken,
+        last_change_page_token=@changetoken,
         status=@status,
         indexed_count=@count,
         updated_at=@now;
-    `).run({ token, status, count, now });
+    `).run({ indextoken, changetoken, status, count, now });
+  }
+
+  private async getStartPageToken(): Promise<string> {
+    const auth = getGoogleAuthInstance();
+    const token = await auth.getAccessToken();
+    const res = await fetch("https://www.googleapis.com/drive/v3/changes/startPageToken", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  
+    if (!res.ok) throw new Error(`Failed to get startPageToken: ${res.status}`);
+    const data = await res.json();
+    const tokenValue = data.startPageToken;
+    this.updateState({ last_change_page_token: tokenValue });
+    return tokenValue;
   }
 
   /** Public: start or resume indexing. Emits progress events and updates DB checkpoint. */
@@ -88,7 +106,7 @@ export class GoogleDriveIndexer extends EventEmitter {
 
       // Drive API: we use files.list with fields minimized
       // Resume from last saved page token if present
-      let pageToken = this.getStateRow().last_page_token ?? undefined;
+      let pageToken = this.getStateRow().last_index_page_token ?? undefined;
 
       let totalIndexed = this.getStateRow().indexed_count ?? 0;
       let pageCount = 0;
@@ -135,17 +153,18 @@ export class GoogleDriveIndexer extends EventEmitter {
             totalIndexed += files.length;
             pageCount++;
             // checkpoint after each page
-            this.updateState({ last_page_token: data.nextPageToken ?? null, indexed_count: totalIndexed });
+            this.updateState({ last_index_page_token: data.nextPageToken ?? null, indexed_count: totalIndexed });
             // Emit progress to renderer
             this.emit("progress", { indexed: totalIndexed, lastPageToken: data.nextPageToken ?? null, pageCount });
         } else {
           // no files on this page
-          this.updateState({ last_page_token: data.nextPageToken ?? null, indexed_count: totalIndexed });
+          this.updateState({ last_index_page_token: data.nextPageToken ?? null, indexed_count: totalIndexed });
         }
 
         // if no next page -> done
         if (!data.nextPageToken) {
-          this.updateState({ status: "completed", last_page_token: null, indexed_count: totalIndexed });
+          this.updateState({ status: "completed", last_index_page_token: null, indexed_count: totalIndexed });
+          this.getStartPageToken()
           this.emit("completed", { indexed: totalIndexed });
           break;
         }
@@ -158,7 +177,7 @@ export class GoogleDriveIndexer extends EventEmitter {
       }
 
       if (this.isStopping) {
-        this.updateState({ status: "paused", last_page_token: this.getStateRow().last_page_token, indexed_count: totalIndexed });
+        this.updateState({ status: "paused", last_index_page_token: this.getStateRow().last_index_page_token, indexed_count: totalIndexed });
         this.emit("paused", { indexed: totalIndexed });
       }
 
@@ -168,6 +187,57 @@ export class GoogleDriveIndexer extends EventEmitter {
       this.emit("error", err);
     }
   }
+
+  public async pollIncrementalChanges(intervalMs = 0.5 * 60 * 1000) {
+    while (true) {
+      try {
+        const auth = getGoogleAuthInstance();
+        const accessToken = await auth.getAccessToken();
+        const state = this.getStateRow();
+        let pageToken = state.last_change_page_token;
+  
+        if (!pageToken) {
+          pageToken = await this.getStartPageToken();
+        }
+  
+        const changesUrl = `https://www.googleapis.com/drive/v3/changes?pageToken=${pageToken}&fields=nextPageToken,newStartPageToken,changes(fileId,file(id,name,mimeType,modifiedTime,trashed,thumbnailLink,webViewLink))`;
+  
+        const res = await fetch(changesUrl, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+  
+        if (!res.ok) throw new Error(`Changes list failed: ${res.status}`);
+        const data = await res.json();
+  
+        const changes = data.changes ?? [];
+        if (changes.length > 0) {
+          for (const change of changes) {
+            const f = change.file;
+            if (!f) continue;
+  
+            if (f.trashed) {
+              getDatabase().prepare("DELETE FROM google_drive WHERE id = ?").run(f.id);
+            } else {
+              insertOrUpdateFiles([this.normaliseDriveFile(f)]);
+            }
+          }
+        }
+  
+        // Update token for next cycle
+        const newToken = data.newStartPageToken ?? data.nextPageToken;
+        if (newToken) this.updateState({ last_change_page_token: newToken });
+  
+        this.emit("incremental-sync", { changes: changes.length, newToken });
+  
+      } catch (err) {
+        console.error("Incremental sync error:", err);
+        this.emit("error", err);
+      }
+  
+      await wait(intervalMs);
+    }
+  }
+  
 
   /** Stop indexing gracefully (will stop after current page and checkpoint) */
   public stop() {
