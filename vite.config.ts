@@ -3,12 +3,13 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { fileURLToPath } from "url";
 import { builtinModules } from "module";
+import tailwindcss from '@tailwindcss/vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Renderer process config
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   root: path.resolve(__dirname, "src/renderer"),
   base: "./",
   build: {
