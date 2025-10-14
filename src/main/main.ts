@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { app, BrowserWindow } from "electron";
 import { registerGoogleDriveIpc } from "./ipc/googleDriveIpc.js";
 import { initializeDatabase } from "./database/db.js";
-import { GoogleDriveIndexer } from './integrations/googleDrive/googleDriveIndexer.js';
+import { registerSearchIpc } from "./ipc/searchIpc.js";
 
 // Load environment variables first
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,8 +53,8 @@ const createWindow = () => {
 
 app.whenReady().then(async () => {
   initializeDatabase();
-  // Register Google Drive IPC with environment variables
   registerGoogleDriveIpc(googleClientId!, googleClientSecret!);
+  registerSearchIpc();
 
   createWindow();
   app.on("activate", () => {

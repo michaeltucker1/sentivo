@@ -2,6 +2,7 @@ import { useState } from "react";
 import Icon from "../global/Icon";
 import Button from "../global/Button";
 import Integrations from "./Integrations";
+import Search from "../Search";
 
 const Settings = () => {
     const [selectedButton, setSelectedButton] = useState("General");
@@ -16,6 +17,13 @@ const Settings = () => {
                     icon={<Icon name="settings" size={16} color={selectedButton == "General" ? "#2c3cca" : "#100f29"}/>}
                     onClick={() => setSelectedButton("General")}
                     isSelected={selectedButton == "General"}
+                />
+
+                <Button
+                    label="Search"
+                    icon={<Icon name="search" size={16} color={selectedButton == "Search" ? "#2c3cca" : "#100f29"}/>}
+                    onClick={() => setSelectedButton("Search")}
+                    isSelected={selectedButton == "Search"}
                 />
 
                 <Button
@@ -34,8 +42,9 @@ const Settings = () => {
 
             </div>
             <div className="w-full p-5 space-y-2 font-sans">
+                {selectedButton === "Search" && <Search />}
                 {selectedButton === "Integrations" && <Integrations />}
-                
+
             </div>
         </div>
     )

@@ -11,4 +11,7 @@ contextBridge.exposeInMainWorld("api", {
   listGoogleDriveFiles: () => ipcRenderer.invoke("google-drive:list-files"),
   saveGoogleDriveFiles: (files: GoogleDriveFile) => ipcRenderer.invoke("google-drive:save-files", files),
   getIndexedFiles: () => ipcRenderer.invoke("google-drive:get-indexed-files"),
+
+  // Search
+  search: (query: string, limit?: number) => ipcRenderer.invoke("search:query", query, limit),
 });
