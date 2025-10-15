@@ -1,5 +1,4 @@
 import { useGoogleAuth } from "../../hooks/useGoogleAuth";
-
 const googleDriveIcon = '/googleDrive.png';
 
 const Integrations = () => {
@@ -8,21 +7,20 @@ const Integrations = () => {
 
     return (
         <div>
-            <h1>Integrations</h1>
-            <h2 className="text-xs text-gray-400">Connect third party services to improve your search</h2>
-
-            <div className="flex items-center justify-between mt-4">
+            <h1 className="text-2xl font-medium">Integrations</h1>
+            <h2 className="text-lg text-[#6b6b7b]">Connect third party services to improve your search</h2>
+            <div className="flex items-center justify-between mt-5">
                 <div className="flex items-center">
-                    <img src={googleDriveIcon} alt="Google Drive" className="w-6 h-6 mr-3" />
-                    <h2 className="text-xs">Google Drive</h2>
+                    <img src={googleDriveIcon} alt="Google Drive" className="w-7 h-7 mr-3" />
+                    <h2 className="text-xl font-medium">Google Drive</h2>
                 </div>
                 {googleAuth.isAuthenticated ? (
-                    <button className="border-1 border-gray-400 px-2 py-1 rounded" onClick={googleAuth.signOut}>
-                        <h2 className="text-xs">Disconnect</h2>
+                    <button className="flex items-center justify-center px-3 py-1.5 bg-[#e0e7ff] text-[#2c3cca] font-medium text-[14px] rounded-md hover:bg-[#d9e0ff] cursor-pointer" onClick={googleAuth.signOut}>
+                        <h2 className="text-xl">Disconnect</h2>
                     </button>
                 ) : (
-                    <button className="border-1 border-gray-400 px-2 py-1 rounded" onClick={googleAuth.signIn}>
-                        <h2 className="text-xs">Connect</h2>
+                    <button className="flex items-center justify-center px-3 py-1.5 border border-[#d4d4d8] text-[#100f29] font-medium text-[14px] rounded-md hover:bg-[#f4f4f5] cursor-pointer" onClick={googleAuth.signIn}>
+                        <h2 className="text-xl">Connect</h2>
                     </button>
                 )}
                 

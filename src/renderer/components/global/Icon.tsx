@@ -5,6 +5,7 @@ interface IconProps {
   name: string;
   size?: number;
   color?: string;
+  strokeWidth?: number;
   className?: string;
 }
 
@@ -12,6 +13,7 @@ const Icon: React.FC<IconProps> = ({
   name,
   size = 24,
   color = "currentColor",
+  strokeWidth = 2,
   className,
 }) => {
   const iconPath = `../../Assets/${name}.svg`;
@@ -25,6 +27,7 @@ const Icon: React.FC<IconProps> = ({
         svg.setAttribute("height", `${size}`);
         svg.querySelectorAll("[stroke]").forEach((el) => {
           el.setAttribute("stroke", color);
+          el.setAttribute("stroke-width", `${strokeWidth}`);
         });
       }}
       fallback={() => (

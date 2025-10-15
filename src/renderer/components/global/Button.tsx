@@ -11,19 +11,19 @@ const Button: React.FC<ButtonProps> = ({ label, icon, onClick, isSelected = fals
     return (
         <div onClick={onClick}>
             {isSelected ? (
-                <div className="flex px-4 py-3 bg-[#f1f1fd] rounded">
+                <div className="flex items-center px-2 py-1.25 bg-[#e0e7ff] rounded cursor-pointer font-medium">
                     <div className="pr-2">
                         {icon}
                     </div>
-                    <h2 className="font-sans text-xs font-normal text-[#2c3cca]">{label}</h2>
+                    <h2 className="font-sans text-[19px] text-[#2c3cca]">{label}</h2>
                 </div>
             ) : (
-                <div className="flex px-4 py-3 rounded">
+                <div className="flex items-center px-2 py-1.25 rounded cursor-pointer hover:bg-[#e0e7ff]">
                     <div className="pr-2">
                         {icon}
                     </div>
-                    <h2 className="font-sans text-xs font-normal text-[#100f29]">{label}</h2>
-                </div>
+                    <h2 className="font-sans text-[19px] font-normal text-[#100f29]">{label}</h2>
+                </div> 
             )}
         </div>
     );

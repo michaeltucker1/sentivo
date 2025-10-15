@@ -2,49 +2,44 @@ import { useState } from "react";
 import Icon from "../global/Icon";
 import Button from "../global/Button";
 import Integrations from "./Integrations";
-import Search from "../Search";
 
 const Settings = () => {
-    const [selectedButton, setSelectedButton] = useState("General");
+    const [selectedButton, setSelectedButton] = useState("Preferences");
 
     return (
         <div className="flex h-screen">
-            <div className="min-w-50 max-w-50 p-5 space-y-2 border-gray-300 border-r-1">
-                <h1 className="font-sans text-xl pb-1">Settings</h1>
-
+            <div className="min-w-55 max-w-55 border-[#e4e4e7] border-r-1 p-4 space-y-2.5 bg-[#f8f8f8]"> 
                 <Button
-                    label="General"
-                    icon={<Icon name="settings" size={16} color={selectedButton == "General" ? "#2c3cca" : "#100f29"}/>}
-                    onClick={() => setSelectedButton("General")}
-                    isSelected={selectedButton == "General"}
-                />
-
-                <Button
-                    label="Search"
-                    icon={<Icon name="search" size={16} color={selectedButton == "Search" ? "#2c3cca" : "#100f29"}/>}
-                    onClick={() => setSelectedButton("Search")}
-                    isSelected={selectedButton == "Search"}
+                    label="Preferences"
+                    icon={<Icon name="preferences" size={22} color={selectedButton == "Preferences" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "Preferences" ? 2.2 : 1.9}/>}
+                    onClick={() => setSelectedButton("Preferences")}
+                    isSelected={selectedButton == "Preferences"}
                 />
 
                 <Button
                     label="Integrations"
-                    icon={<Icon name="integrations" size={16} color={selectedButton == "Integrations" ? "#2c3cca" : "#100f29"}/>}
+                    icon={<Icon name="integrations" size={22} color={selectedButton == "Integrations" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "Integrations" ? 2.2 : 1.9}/>}
                     onClick={() => setSelectedButton("Integrations")}
                     isSelected={selectedButton == "Integrations"}
                 />
 
                 <Button
+                    label="Feedback"
+                    icon={<Icon name="feedback" size={22} color={selectedButton == "feedback" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "feedback" ? 2.2 : 1.9} />}
+                    onClick={() => setSelectedButton("feedback")}
+                    isSelected={selectedButton == "feedback"}
+                />
+
+                <Button
                     label="Account"
-                    icon={<Icon name="account" size={16} color={selectedButton == "Account" ? "#2c3cca" : "#100f29"} />}
+                    icon={<Icon name="account" size={22} color={selectedButton == "Account" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "Account" ? 2.2 : 1.9} />}
                     onClick={() => setSelectedButton("Account")}
                     isSelected={selectedButton == "Account"}
                 />
 
             </div>
-            <div className="w-full p-5 space-y-2 font-sans">
-                {selectedButton === "Search" && <Search />}
+            <div className="w-full p-4 space-y-2">
                 {selectedButton === "Integrations" && <Integrations />}
-
             </div>
         </div>
     )
