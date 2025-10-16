@@ -69,12 +69,16 @@ export const createSearchWindow = () => {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   // Dimensions: wider but short (room for search bar + results)
-  const winWidth = 700;
+  const winWidth = 600;
   const winHeight = 500;
 
   const win = new BrowserWindow({
     width: winWidth,
     height: winHeight,
+    minWidth: winWidth,
+    minHeight: winHeight,
+    maxWidth: winWidth,
+    maxHeight: winHeight,     
     x: Math.round(width / 2 - winWidth / 2),
     y: Math.round(height / 4), // Slightly higher than center
     show: false,
@@ -145,9 +149,12 @@ export function createTray() {
 }
 
 function toggleSettingsWindow() {
-  if (searchWindow.isVisible()) {
-    searchWindow.hide();
+  if(searchWindow){
+    if (searchWindow.isVisible()) {
+      searchWindow.hide();
+    }
   }
+  
   if (!settingsWindow) createSettingsWindow();
   if (settingsWindow.isVisible()) {
     settingsWindow.hide();
