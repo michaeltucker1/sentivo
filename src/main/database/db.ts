@@ -26,6 +26,13 @@ export function initializeDatabase() {
     );
   `);
 
+  // Create indexes for better search performance
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_google_drive_name ON google_drive(name);
+    CREATE INDEX IF NOT EXISTS idx_google_drive_mimeType ON google_drive(mimeType);
+    CREATE INDEX IF NOT EXISTS idx_google_drive_modifiedTime ON google_drive(modifiedTime);
+  `);
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS google_drive_index_state (
       id INTEGER PRIMARY KEY CHECK (id = 1),

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { SearchResults } from "../types";
 
 export const useSearch = () => {
@@ -36,6 +36,19 @@ export const useSearch = () => {
     }
   }, []);
 
+  // Debounced search function
+  const debouncedSearch = useCallback((searchQuery: string, delay = 300) => {
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(() => {
+      search(searchQuery);
+    }, delay);
+  }, [search]);
+
   // Clear search results
   const clearSearch = useCallback(() => {
     setQuery("");
@@ -47,13 +60,22 @@ export const useSearch = () => {
     }
   }, []);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return {
     query,
     setQuery,
     results,
     loading,
     error,
-    search,
+    debouncedSearch,
     clearSearch,
   };
 };

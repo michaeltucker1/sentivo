@@ -26,36 +26,102 @@ export interface SearchProvider {
   search(query: string, limit?: number): Promise<SearchResult[]>;
 }
 
+// Simple in-memory cache for search results
+interface CacheEntry {
+  results: SearchResult[];
+  timestamp: number;
+  query: string;
+}
+
+class SearchCache {
+  private cache = new Map<string, CacheEntry>();
+  private readonly TTL = 30000; // 30 seconds TTL
+
+  get(query: string): SearchResult[] | null {
+    const entry = this.cache.get(query);
+    if (!entry) return null;
+
+    const now = Date.now();
+    if (now - entry.timestamp > this.TTL) {
+      this.cache.delete(query);
+      return null;
+    }
+
+    return entry.results;
+  }
+
+  set(query: string, results: SearchResult[]): void {
+    this.cache.set(query, {
+      results,
+      timestamp: Date.now(),
+      query
+    });
+
+    // Clean up old entries periodically
+    if (this.cache.size > 100) {
+      this.cleanup();
+    }
+  }
+
+  private cleanup(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.TTL) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const searchCache = new SearchCache();
+
 // MacOS native search provider using Spotlight
+// Simplified MacOS native search provider using Spotlight
 export class MacOSSearchProvider implements SearchProvider {
   name = 'macos';
 
   async search(query: string, limit = 10): Promise<SearchResult[]> {
-    try {
-      // Use mdfind to search using Spotlight index
-      const searchQuery = this.buildSpotlightQuery(query);
-      const { stdout } = await execAsync(`mdfind -onlyin ~ "${searchQuery}" | head -${limit}`);
+    if (!query.trim()) return [];
 
-      const results: SearchResult[] = [];
+    // Check cache first
+    const cachedResults = searchCache.get(query);
+    if (cachedResults) {
+      console.log(`Cache hit for query: ${query}`);
+      return cachedResults;
+    }
+
+    try {
+      // Use Spotlight to search all indexed files by filename
+      const { stdout } = await execAsync(`mdfind -name "${query}" | head -${limit}`);
+
       const paths = stdout.trim().split('\n').filter(Boolean);
+      const results: SearchResult[] = [];
 
       for (const path of paths) {
-        const stat = await this.getFileStat(path);
-        if (stat) {
+        try {
+          const stat = await this.getFileStat(path);
+          if (!stat) continue;
+
           results.push({
             id: path,
             name: path.split('/').pop() || path,
-            path: path,
+            path,
             type: stat.isDirectory ? 'folder' : 'file',
             source: 'local',
             score: this.calculateScore(query, path),
-            metadata: {
-              modifiedTime: stat.mtime.toISOString()
-            }
+            metadata: { modifiedTime: stat.mtime.toISOString() }
           });
+        } catch {
+          // Skip unreadable files
+          continue;
         }
       }
 
+      searchCache.set(query, results);
       return results;
     } catch (error) {
       console.error('MacOS search error:', error);
@@ -63,19 +129,13 @@ export class MacOSSearchProvider implements SearchProvider {
     }
   }
 
-  private buildSpotlightQuery(query: string): string {
-    // Build a Spotlight query that searches in filename and content
-    const terms = query.split(' ').filter(Boolean);
-    return terms.map(term => `kMDItemDisplayName == "*${term}*cdw" || kMDItemTextContent == "*${term}*cdw"`).join(' && ');
-  }
-
   private async getFileStat(path: string) {
     try {
-      const { stdout } = await execAsync(`stat -f "%m %d" "${path}" 2>/dev/null || echo "0 0"`);
-      const [mtimeStr, isDirStr] = stdout.trim().split(' ');
+      const { stdout } = await execAsync(`stat -f "%m %HT" "${path}" 2>/dev/null || echo "0 0"`);
+      const [mtimeStr, typeStr] = stdout.trim().split(' ');
       return {
         mtime: new Date(parseInt(mtimeStr) * 1000),
-        isDirectory: isDirStr === '1'
+        isDirectory: typeStr === 'Directory'
       };
     } catch {
       return null;
@@ -84,55 +144,57 @@ export class MacOSSearchProvider implements SearchProvider {
 
   private calculateScore(query: string, path: string): number {
     const name = path.toLowerCase();
-    const queryLower = query.toLowerCase();
+    const q = query.toLowerCase();
 
-    // Exact match gets highest score
-    if (name.includes(queryLower)) {
-      return 100;
-    }
+    if (name === q) return 100;
+    if (name.endsWith(`/${q}`)) return 95;
+    if (name.includes(q)) return 85;
 
-    // Word matches get medium score
-    const queryWords = queryLower.split(' ');
-    let wordMatches = 0;
-    for (const word of queryWords) {
-      if (name.includes(word)) {
-        wordMatches++;
-      }
-    }
-
-    if (wordMatches > 0) {
-      return 50 + (wordMatches / queryWords.length) * 40;
-    }
-
-    // Partial matches get lower score
-    let partialMatches = 0;
-    for (const word of queryWords) {
-      for (let i = 1; i <= word.length; i++) {
-        if (name.includes(word.substring(0, i))) {
-          partialMatches++;
-          break;
-        }
-      }
-    }
-
-    return Math.max(10, partialMatches * 5);
+    // Basic word match boost
+    const words = q.split(/\s+/);
+    const matches = words.filter(w => name.includes(w)).length;
+    return matches > 0 ? Math.min(60 + matches * 10, 90) : 40;
   }
 }
+
 
 // Google Drive search provider
 export class GoogleDriveSearchProvider implements SearchProvider {
   name = 'drive';
 
   async search(query: string, limit = 10): Promise<SearchResult[]> {
+    // Check cache first
+    const cachedResults = searchCache.get(query);
+    if (cachedResults) {
+      console.log(`Cache hit for query: ${query}`);
+      return cachedResults;
+    }
+
     const db = getDatabase();
+
+    // Use FTS (Full-Text Search) if available, otherwise optimize the LIKE query
+    try {
+      // Try FTS first for better performance
+      const ftsResults = await this.searchWithFTS(query, limit);
+      if (ftsResults.length > 0) {
+        searchCache.set(query, ftsResults);
+        return ftsResults;
+      }
+    } catch (error) {
+      // FTS not available, fall back to optimized LIKE query
+      console.log('FTS not available, using optimized LIKE query');
+    }
+
+    // Optimized LIKE query with better indexing
     const stmt = db.prepare(`
       SELECT * FROM google_drive
-      WHERE name LIKE ?
+      WHERE name LIKE ? OR name LIKE ? OR name LIKE ?
       ORDER BY
         CASE
           WHEN name LIKE ? THEN 1
           WHEN name LIKE ? THEN 2
-          ELSE 3
+          WHEN name LIKE ? THEN 3
+          ELSE 4
         END,
         modifiedTime DESC
       LIMIT ?
@@ -142,9 +204,9 @@ export class GoogleDriveSearchProvider implements SearchProvider {
     const exactPattern = `${query}%`;
     const startPattern = `%${query}`;
 
-    const files = stmt.all(searchPattern, exactPattern, startPattern, limit) as GoogleDriveFile[];
+    const files = stmt.all(searchPattern, startPattern, exactPattern, exactPattern, startPattern, searchPattern, limit) as GoogleDriveFile[];
 
-    return files.map(file => ({
+    const results = files.map(file => ({
       id: file.id,
       name: file.name,
       type: this.getFileType(file.mimeType),
@@ -157,6 +219,17 @@ export class GoogleDriveSearchProvider implements SearchProvider {
         webViewLink: file.webViewLink || undefined
       }
     }));
+
+    // Cache the results
+    searchCache.set(query, results);
+
+    return results;
+  }
+
+  private async searchWithFTS(query: string, limit = 10): Promise<SearchResult[]> {
+    // For now, return empty array as FTS is not implemented
+    // This could be enhanced later with SQLite FTS extension
+    return [];
   }
 
   private getFileType(mimeType?: string | null): 'file' | 'folder' {
@@ -181,31 +254,98 @@ export class GoogleDriveSearchProvider implements SearchProvider {
     else if (nameLower.includes(queryLower)) {
       score = 70;
     }
-    // Word matches get lower score
+    // Word matches get lower score with fuzzy matching
     else {
       const queryWords = queryLower.split(' ');
       let wordMatches = 0;
+      let bestFuzzyScore = 0;
+
       for (const word of queryWords) {
         if (nameLower.includes(word)) {
           wordMatches++;
+          bestFuzzyScore = Math.max(bestFuzzyScore, this.fuzzyMatchScore(word, nameLower));
         }
       }
-      score = Math.max(20, wordMatches * 15);
+
+      if (wordMatches > 0) {
+        const wordScore = Math.max(20, wordMatches * 15);
+        const fuzzyScore = bestFuzzyScore * 10;
+        score = wordScore + fuzzyScore;
+      } else {
+        // Partial fuzzy matching for very loose matches
+        let partialMatches = 0;
+        let bestPartialFuzzy = 0;
+
+        for (const word of queryWords) {
+          for (let i = 1; i <= word.length; i++) {
+            const partial = word.substring(0, i);
+            if (nameLower.includes(partial)) {
+              partialMatches++;
+              bestPartialFuzzy = Math.max(bestPartialFuzzy, this.fuzzyMatchScore(partial, nameLower));
+              break;
+            }
+          }
+        }
+
+        if (partialMatches > 0) {
+          score = Math.max(10, partialMatches * 5 + bestPartialFuzzy * 5);
+        }
+      }
     }
 
     // Boost score for recently modified files
-    if (modifiedTime) {
+    if (modifiedTime && score > 0) {
       const modTime = new Date(modifiedTime);
       const daysSinceModified = (Date.now() - modTime.getTime()) / (1000 * 60 * 60 * 24);
 
       if (daysSinceModified < 1) {
-        score += 10; // Boost for files modified today
+        score += 15; // Boost for files modified today
       } else if (daysSinceModified < 7) {
-        score += 5; // Boost for files modified this week
+        score += 8; // Boost for files modified this week
+      } else if (daysSinceModified < 30) {
+        score += 3; // Small boost for files modified this month
       }
     }
 
     return Math.min(score, 100);
+  }
+
+  private fuzzyMatchScore(query: string, target: string): number {
+    // Enhanced fuzzy matching with position weighting
+    let score = 0;
+    let queryIndex = 0;
+    let consecutiveMatches = 0;
+    let maxConsecutive = 0;
+
+    for (let i = 0; i < target.length && queryIndex < query.length; i++) {
+      if (target[i] === query[queryIndex]) {
+        // Bonus for consecutive matches (acronym-like matching)
+        if (i > 0 && target[i - 1] === query[queryIndex - 1]) {
+          consecutiveMatches++;
+        } else {
+          consecutiveMatches = 1;
+        }
+
+        maxConsecutive = Math.max(maxConsecutive, consecutiveMatches);
+        score += 1;
+        queryIndex++;
+
+        // Bonus for matches at word boundaries
+        if (i === 0 || target[i - 1] === ' ' || target[i - 1] === '-') {
+          score += 0.5;
+        }
+      } else {
+        consecutiveMatches = 0;
+      }
+    }
+
+    // Bonus for completing the entire query
+    const completionBonus = queryIndex === query.length ? 20 : 0;
+
+    // Bonus for long consecutive matches
+    const consecutiveBonus = maxConsecutive * 2;
+
+    return Math.min(100, (score / query.length) * 80 + completionBonus + consecutiveBonus);
   }
 }
 
