@@ -283,20 +283,11 @@ export function registerIndexerIpc(indexer: GoogleDriveIndexer) {
 
   // forward progress updates to renderer as events
   indexer.on("progress", (p) => {
-    // you can broadcast via BrowserWindow.webContents.send or a simple IPC channel
-    // e.g. mainWindow.webContents.send('drive:index:progress', p)
-    // we'll dispatch via a generic IPC channel:
-    // NOTE: access to mainWindow available in your main.ts scope
-    // implement sending there or create a small publisher
-    // For example:
-    // mainWindow?.webContents.send("drive:index:progress", p);
   });
 
   indexer.on("completed", (payload) => {
-    // broadcast completed
   });
 
   indexer.on("error", (err) => {
-    // broadcast error
   });
 }

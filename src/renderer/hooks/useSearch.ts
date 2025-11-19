@@ -3,7 +3,7 @@ import { SearchResults } from "../types";
 
 export const useSearch = () => {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResults>({ local: [], drive: [] });
+  const [results, setResults] = useState<SearchResults>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -11,7 +11,7 @@ export const useSearch = () => {
   // Main search function
   const search = useCallback(async (searchQuery: string, limit = 10) => {
     if (!searchQuery.trim()) {
-      setResults({ local: [], drive: [] });
+      setResults([]);
       return;
     }
 
@@ -19,18 +19,13 @@ export const useSearch = () => {
       setLoading(true);
       setError(null);
 
-      const response = await (window as any).api.search(searchQuery, limit);
-      if (response.success) {
-        setResults(response.data || { local: [], drive: [] });
-      } else {
-        setError(response.error || "Search failed");
-        setResults({ local: [], drive: [] });
-      }
+      const response = await window.api.search(searchQuery, limit);
+      setResults(response ?? []);
 
     } catch (err) {
       console.error('Search failed:', err);
       setError(err instanceof Error ? err.message : "Search failed");
-      setResults({ local: [], drive: [] });
+      setResults([]);
     } finally {
       setLoading(false);
     }
@@ -52,7 +47,7 @@ export const useSearch = () => {
   // Clear search results
   const clearSearch = useCallback(() => {
     setQuery("");
-    setResults({ local: [], drive: [] });
+    setResults([]);
     setError(null);
 
     if (searchTimeoutRef.current) {

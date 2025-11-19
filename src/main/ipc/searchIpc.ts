@@ -5,18 +5,12 @@ export const registerSearchIpc = () => {
   // Main search endpoint
   ipcMain.handle("search:query", async (_, query: string, limit?: number) => {
     try {
-      const results = await search(query, limit);
-      return {
-        success: true,
-        data: results
-      };
+      return await search(query, limit);
     } catch (error) {
       console.error("Search error:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown search error",
-        data: { local: [], drive: [] }
-      };
+      throw new Error(
+        error instanceof Error ? error.message : "Unknown search error"
+      );
     }
   });
 

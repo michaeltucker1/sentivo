@@ -35,3 +35,18 @@ export function searchFiles(keyword: string): GoogleDriveFile[] {
   `);
   return stmt.all(`%${keyword}%`) as GoogleDriveFile[];
 }
+
+export function clearGoogleDriveIndex() {
+  const db = getDatabase();
+  db.prepare("DELETE FROM google_drive").run();
+  db.prepare(`
+    UPDATE google_drive_index_state
+    SET
+      last_index_page_token = NULL,
+      last_change_page_token = NULL,
+      status = 'idle',
+      indexed_count = 0,
+      updated_at = datetime('now')
+    WHERE id = 1
+  `).run();
+}

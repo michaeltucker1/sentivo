@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 import { initGoogleDriveAuth, listDriveFiles, getGoogleAuthInstance } from "../integrations/googleDrive/googleDrive.js";
-import { insertOrUpdateFiles, getAllFiles } from "../database/googleDriveIndex.js";
+import { insertOrUpdateFiles, getAllFiles, clearGoogleDriveIndex } from "../database/googleDriveIndex.js";
+import { clearSearchCache } from "../database/search.js";
 
 export const registerGoogleDriveIpc = (clientId: string, clientSecret: string) => {
   initGoogleDriveAuth(clientId, clientSecret);
@@ -15,6 +16,8 @@ export const registerGoogleDriveIpc = (clientId: string, clientSecret: string) =
   ipcMain.handle("google-drive:sign-out", async () => {
     const auth = getGoogleAuthInstance();
     await auth.signOut();
+    clearGoogleDriveIndex();
+    clearSearchCache('drive');
     return { success: true };
   });
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useSearch } from "../hooks/useSearch";
 import { formatDistanceToNow } from "date-fns";
+import { useSearch } from "../hooks/useSearch";
+import type { SearchResult } from "../types";
 
 const Search: React.FC = () => {
   const {
@@ -15,7 +16,6 @@ const Search: React.FC = () => {
 
   const [selected, setSelected] = useState(0);
 
-  // Run search automatically as user types
   useEffect(() => {
     if (query.trim().length > 0) debouncedSearch(query);
     else clearSearch();
@@ -24,20 +24,23 @@ const Search: React.FC = () => {
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      const allResults = [...(results.local || []), ...(results.drive || [])];
+      if (results.length === 0) return;
+
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelected((prev) => Math.min(prev + 1, allResults.length - 1));
+        setSelected((prev) => Math.min(prev + 1, results.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelected((prev) => Math.max(prev - 1, 0));
       } else if (e.key === "Escape") {
         handleClear();
-      } else if (e.key === "Enter" && allResults[selected]) {
-        const item = allResults[selected];
+      } else if (e.key === "Enter") {
+        const item = results[selected];
+        if (!item) return;
+
         if (item.source === "drive" && item.metadata?.webViewLink) {
           window.open(item.metadata.webViewLink, "_blank");
-        } else {
+        } else if (item.path) {
           console.log("Open local item:", item.path);
         }
       }
@@ -56,7 +59,15 @@ const Search: React.FC = () => {
     setSelected(0);
   };
 
-  const renderResultItem = (item: any, isActive: boolean) => {
+  const renderResultItem = (
+    item: SearchResult & { index: number },
+    isActive: boolean
+  ) => {
+    const isDrive = item.source === "drive";
+    const sourceLabel = isDrive ? "Google Drive" : "Local";
+    const sourceBadgeClass = isDrive
+      ? "bg-blue-50 text-blue-600 border-blue-100"
+      : "bg-emerald-50 text-emerald-600 border-emerald-100";
     const modifiedLabel = item.metadata?.modifiedTime
       ? formatDistanceToNow(new Date(item.metadata.modifiedTime), {
           addSuffix: true,
@@ -95,6 +106,11 @@ const Search: React.FC = () => {
             {item.name}
           </span>
           <div className="flex items-center gap-2 text-[13px] text-neutral-500 truncate">
+            <span
+              className={`text-[11px] font-semibold uppercase tracking-wide px-2 py-[1px] rounded-full border ${sourceBadgeClass}`}
+            >
+              {sourceLabel}
+            </span>
             <span className="truncate">
               {item.source === "local"
                 ? item.path
@@ -109,25 +125,7 @@ const Search: React.FC = () => {
     );
   };
 
-  const renderSection = (title: string, data: any[], startIndex: number) => (
-    <>
-      {data.length > 0 && (
-        <>
-          <div className="sticky top-[0px] bg-white py-2 px-5 text-[13px] text-neutral-500 font-medium uppercase tracking-wide border-b border-neutral-100 z-10">
-            {title}
-          </div>
-          {data.map((item, i) =>
-            renderResultItem(
-              { ...item, index: startIndex + i },
-              startIndex + i === selected
-            )
-          )}
-        </>
-      )}
-    </>
-  );
-
-  const totalResults = (results.local?.length || 0) + (results.drive?.length || 0);
+  const totalResults = results.length;
 
   return (
     <div className="w-full h-full flex flex-col bg-white rounded-xl overflow-hidden shadow-sm">
@@ -159,11 +157,11 @@ const Search: React.FC = () => {
       {/* Results */}
       {query.trim().length > 0 && (
         <div className="w-full max-h-[65vh] overflow-y-auto pb-4 scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent">
-          {loading && (
+          {/* {loading && (
             <div className="px-6 py-6 text-neutral-500 text-[15px]">
               Searching...
             </div>
-          )}
+          )} */}
           {error && (
             <div className="px-6 py-6 text-red-500 text-[15px]">
               Something went wrong.
@@ -175,14 +173,11 @@ const Search: React.FC = () => {
             </div>
           )}
           {!loading && !error && (
-            <>
-              {renderSection("Local", results.local || [], 0)}
-              {renderSection(
-                "Google Drive",
-                results.drive || [],
-                (results.local?.length || 0)
+            <div className="flex flex-col gap-1">
+              {results.map((item, index) =>
+                renderResultItem({ ...item, index }, index === selected)
               )}
-            </>
+            </div>
           )}
         </div>
       )}

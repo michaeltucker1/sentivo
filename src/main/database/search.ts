@@ -37,21 +37,23 @@ class SearchCache {
   private cache = new Map<string, CacheEntry>();
   private readonly TTL = 30000; // 30 seconds TTL
 
-  get(query: string): SearchResult[] | null {
-    const entry = this.cache.get(query);
+  get(query: string, provider: string): SearchResult[] | null {
+    const key = this.getKey(query, provider);
+    const entry = this.cache.get(key);
     if (!entry) return null;
 
     const now = Date.now();
     if (now - entry.timestamp > this.TTL) {
-      this.cache.delete(query);
+      this.cache.delete(key);
       return null;
     }
 
     return entry.results;
   }
 
-  set(query: string, results: SearchResult[]): void {
-    this.cache.set(query, {
+  set(query: string, provider: string, results: SearchResult[]): void {
+    const key = this.getKey(query, provider);
+    this.cache.set(key, {
       results,
       timestamp: Date.now(),
       query
@@ -75,12 +77,32 @@ class SearchCache {
   clear(): void {
     this.cache.clear();
   }
+
+  clearProvider(provider: string): void {
+    const prefix = `${provider}:`;
+    for (const key of Array.from(this.cache.keys())) {
+      if (key.startsWith(prefix)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  private getKey(query: string, provider: string): string {
+    return `${provider}:${query}`;
+  }
 }
 
 const searchCache = new SearchCache();
 
+export function clearSearchCache(provider?: string) {
+  if (provider) {
+    searchCache.clearProvider(provider);
+  } else {
+    searchCache.clear();
+  }
+}
+
 // MacOS native search provider using Spotlight
-// Simplified MacOS native search provider using Spotlight
 export class MacOSSearchProvider implements SearchProvider {
   name = 'macos';
 
@@ -88,7 +110,7 @@ export class MacOSSearchProvider implements SearchProvider {
     if (!query.trim()) return [];
 
     // Check cache first
-    const cachedResults = searchCache.get(query);
+    const cachedResults = searchCache.get(query, this.name);
     if (cachedResults) {
       console.log(`Cache hit for query: ${query}`);
       return cachedResults;
@@ -121,7 +143,7 @@ export class MacOSSearchProvider implements SearchProvider {
         }
       }
 
-      searchCache.set(query, results);
+      searchCache.set(query, this.name, results);
       return results;
     } catch (error) {
       console.error('MacOS search error:', error);
@@ -164,9 +186,8 @@ export class GoogleDriveSearchProvider implements SearchProvider {
 
   async search(query: string, limit = 10): Promise<SearchResult[]> {
     // Check cache first
-    const cachedResults = searchCache.get(query);
+    const cachedResults = searchCache.get(query, this.name);
     if (cachedResults) {
-      console.log(`Cache hit for query: ${query}`);
       return cachedResults;
     }
 
@@ -177,7 +198,7 @@ export class GoogleDriveSearchProvider implements SearchProvider {
       // Try FTS first for better performance
       const ftsResults = await this.searchWithFTS(query, limit);
       if (ftsResults.length > 0) {
-        searchCache.set(query, ftsResults);
+        searchCache.set(query, this.name, ftsResults);
         return ftsResults;
       }
     } catch (error) {
@@ -221,7 +242,7 @@ export class GoogleDriveSearchProvider implements SearchProvider {
     }));
 
     // Cache the results
-    searchCache.set(query, results);
+    searchCache.set(query, this.name, results);
 
     return results;
   }
@@ -398,9 +419,9 @@ export class SearchResultRanker {
 }
 
 // Main search function
-export async function search(query: string, limit = 10): Promise<{local: SearchResult[], drive: SearchResult[]}> {
+export async function search(query: string, limit = 10): Promise<SearchResult[]> {
   if (!query.trim()) {
-    return { local: [], drive: [] };
+    return [];
   }
 
   const providers: SearchProvider[] = [
@@ -418,17 +439,11 @@ export async function search(query: string, limit = 10): Promise<{local: SearchR
 
   const results = await Promise.all(searchPromises);
 
-  // Rank and combine results
+  // Rank and combine results (already sorted/limited per provider)
   const rankedResults = SearchResultRanker.rankAndCombineResults(results);
 
-  // Split results by source
-  const localResults = rankedResults.filter(r => r.source === 'local').slice(0, limit);
-  const driveResults = rankedResults.filter(r => r.source === 'drive').slice(0, limit);
-
-  return {
-    local: localResults,
-    drive: driveResults
-  };
+  // Limit total results returned to maintain consistent payload size
+  return rankedResults.slice(0, limit * providers.length);
 }
 
 // Utility functions for extending search functionality

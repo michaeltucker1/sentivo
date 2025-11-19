@@ -19,10 +19,7 @@ interface SearchResult {
   };
 }
 
-interface SearchResults {
-  local: SearchResult[];
-  drive: SearchResult[];
-}
+type SearchResults = SearchResult[];
 
 interface api {
   version: string;
