@@ -165,6 +165,14 @@ const Search: React.FC = () => {
     setSelected(0);
   }, [clearSearch]);
 
+  const handleCloseWindow = useCallback(async () => {
+    try {
+      await window.api.hideSearchWindow();
+    } catch (error) {
+      console.error("Failed to hide search window:", error);
+    }
+  }, []);
+
   // Keyboard navigation
   const handleOpenResult = useCallback(
     async (item: SearchResult | undefined) => {
@@ -186,28 +194,44 @@ const Search: React.FC = () => {
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (visibleResults.length === 0) return;
+      const hasResults = visibleResults.length > 0;
 
       if (e.key === "ArrowDown") {
+        if (!hasResults) return;
         e.preventDefault();
         setSelected((prev) => Math.min(prev + 1, visibleResults.length - 1));
       } else if (e.key === "ArrowUp") {
+        if (!hasResults) return;
         e.preventDefault();
         setSelected((prev) => Math.max(prev - 1, 0));
       } else if (e.key === "Escape") {
+        const isEmpty = query.trim().length === 0;
         handleClear();
+        if (isEmpty) {
+          void handleCloseWindow();
+        }
       } else if (e.key === "Enter") {
+        if (!hasResults) return;
         e.preventDefault();
         void handleOpenResult(visibleResults[selected]);
       }
     },
-    [visibleResults, selected, handleClear, handleOpenResult]
+    [visibleResults, selected, handleClear, handleOpenResult, handleCloseWindow, query]
   );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    const handleWindowBlur = () => {
+      void handleCloseWindow();
+    };
+
+    window.addEventListener("blur", handleWindowBlur);
+    return () => window.removeEventListener("blur", handleWindowBlur);
+  }, [handleCloseWindow]);
 
   const renderResultItem = (
     item: SearchResult & { index: number },
@@ -228,10 +252,11 @@ const Search: React.FC = () => {
       <div
         key={item.id}
         onMouseEnter={() => setSelected(item.index)}
-        className={`flex items-center gap-3 px-5 py-3 cursor-pointer rounded-lg transition-all duration-150 ease-out
+        onDoubleClick={() => void handleOpenResult(item)}
+        className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-all duration-150 ease-out
           ${
             isActive
-              ? "bg-neutral-100 shadow-sm ring-1 ring-neutral-300"
+              ? "bg-neutral-200"
               : "hover:bg-neutral-50"
           }`}
       >
@@ -272,7 +297,7 @@ const Search: React.FC = () => {
   const totalResults = visibleResults.length;
 
   return (
-    <div className="w-full h-full flex flex-col bg-white rounded-xl overflow-hidden shadow-sm">
+    <div className="w-full h-full flex flex-col bg-white rounded-2xl overflow-hidden shadow-lg">
       {/* Search Bar */}
       <div className="sticky top-0 z-20 bg-white px-6 py-4 border-b border-neutral-200 flex items-center gap-3">
         <input
@@ -293,14 +318,9 @@ const Search: React.FC = () => {
         )}
       </div>
 
-      {/* Empty state */}
-      {query.trim().length === 0 && (
-        <div className="flex-1" />
-      )}
-
       {/* Results */}
       {query.trim().length > 0 && (
-        <div className="w-full max-h-[65vh] overflow-y-auto pb-4 scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent">
+        <div className="w-full max-h-[65vh] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent">
           {/* {loading && (
             <div className="px-6 py-6 text-neutral-500 text-[15px]">
               Searching...
@@ -316,7 +336,7 @@ const Search: React.FC = () => {
               No results found.
             </div>
           )} */}
-          {!loading && !error && (
+          {!loading && !error && visibleResults.length > 0 &&(
             <div className="flex flex-col">
               {visibleResults.map((item, index) =>
                 renderResultItem({ ...item, index }, index === selected)

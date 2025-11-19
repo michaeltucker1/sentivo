@@ -19,4 +19,6 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("search:open-local-path", filePath),
   openExternalUrl: (url: string) =>
     ipcRenderer.invoke("search:open-external-url", url),
+  hideSearchWindow: () =>
+    ipcRenderer.invoke("search:hide-window"),
 });

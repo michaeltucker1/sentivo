@@ -1,4 +1,4 @@
-import { ipcMain, shell } from "electron";
+import { BrowserWindow, ipcMain, shell } from "electron";
 import { search } from "../database/search.js";
 
 export const registerSearchIpc = () => {
@@ -46,6 +46,19 @@ export const registerSearchIpc = () => {
       console.error("Failed to open external URL:", error);
       throw new Error(
         error instanceof Error ? error.message : "Failed to open external link"
+      );
+    }
+  });
+
+  ipcMain.handle("search:hide-window", async (event) => {
+    try {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      window?.hide();
+      return true;
+    } catch (error) {
+      console.error("Failed to hide search window:", error);
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to hide search window"
       );
     }
   });
