@@ -3,6 +3,137 @@ import { formatDistanceToNow } from "date-fns";
 import { useSearch } from "../hooks/useSearch";
 import type { SearchResult } from "../types";
 
+const fileIconMap = {
+  folder: new URL("../Assets/fileIcons/folder.svg", import.meta.url).href,
+  image: new URL("../Assets/fileIcons/image.svg", import.meta.url).href,
+  video: new URL("../Assets/fileIcons/video.svg", import.meta.url).href,
+  audio: new URL("../Assets/fileIcons/audio.svg", import.meta.url).href,
+  document: new URL("../Assets/fileIcons/document.svg", import.meta.url).href,
+  spreadsheet: new URL("../Assets/fileIcons/spreadsheet.svg", import.meta.url).href,
+  code: new URL("../Assets/fileIcons/code.svg", import.meta.url).href,
+  default: new URL("../Assets/fileIcons/default.svg", import.meta.url).href,
+} as const;
+
+type IconKey = keyof typeof fileIconMap;
+
+const imageExtensions = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "bmp",
+  "tiff",
+  "svg",
+]);
+const videoExtensions = new Set([
+  "mp4",
+  "mov",
+  "avi",
+  "mkv",
+  "webm",
+  "flv",
+]);
+const audioExtensions = new Set(["mp3", "wav", "aac", "flac", "ogg", "m4a"]);
+const codeExtensions = new Set([
+  "ts",
+  "tsx",
+  "js",
+  "jsx",
+  "mjs",
+  "cjs",
+  "py",
+  "rb",
+  "go",
+  "java",
+  "cs",
+  "cpp",
+  "c",
+  "php",
+  "html",
+  "css",
+  "scss",
+  "json",
+  "yml",
+  "yaml",
+  "md",
+  "sh",
+]);
+const documentExtensions = new Set([
+  "pdf",
+  "doc",
+  "docx",
+  "txt",
+  "rtf",
+  "md",
+  "ppt",
+  "pptx",
+]);
+const spreadsheetExtensions = new Set(["xls", "xlsx", "csv", "ods", "tsv"]);
+
+const getExtension = (path?: string) => {
+  if (!path) return "";
+  const lastSegment = path.split("/").pop();
+  const ext = lastSegment?.split(".").pop();
+  return ext?.toLowerCase() ?? "";
+};
+
+const getIconKeyFromMime = (mime?: string): IconKey | null => {
+  if (!mime) return null;
+  const lower = mime.toLowerCase();
+
+  if (lower === "application/vnd.google-apps.folder") return "folder";
+  if (lower.startsWith("image/")) return "image";
+  if (lower.startsWith("video/")) return "video";
+  if (lower.startsWith("audio/")) return "audio";
+  if (lower.includes("spreadsheet") || lower.includes("sheet")) return "spreadsheet";
+  if (lower.includes("presentation")) return "document";
+  if (
+    lower === "application/pdf" ||
+    lower === "application/msword" ||
+    lower === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    lower === "text/plain" ||
+    lower === "text/markdown" ||
+    lower === "application/vnd.google-apps.document"
+  ) {
+    return "document";
+  }
+  if (
+    lower.includes("json") ||
+    lower.includes("javascript") ||
+    lower.includes("typescript") ||
+    lower.includes("x-python") ||
+    lower.includes("x-sh") ||
+    lower.includes("x-ruby")
+  ) {
+    return "code";
+  }
+
+  return null;
+};
+
+const determineIconKey = (item: SearchResult): IconKey => {
+  if (item.type === "folder") {
+    return "folder";
+  }
+
+  const mimeTypeKey = getIconKeyFromMime(item.metadata?.mimeType);
+  if (mimeTypeKey) {
+    return mimeTypeKey;
+  }
+
+  const extension = getExtension(item.path);
+
+  if (imageExtensions.has(extension)) return "image";
+  if (videoExtensions.has(extension)) return "video";
+  if (audioExtensions.has(extension)) return "audio";
+  if (spreadsheetExtensions.has(extension)) return "spreadsheet";
+  if (documentExtensions.has(extension)) return "document";
+  if (codeExtensions.has(extension)) return "code";
+
+  return "default";
+};
+
 const Search: React.FC = () => {
   const {
     query,
@@ -85,17 +216,11 @@ const Search: React.FC = () => {
               : "hover:bg-neutral-50"
           }`}
       >
-        {item.source === "drive" && item.metadata?.thumbnailLink ? (
-          <img
-            src={item.metadata.thumbnailLink}
-            alt=""
-            className="w-8 h-8 rounded-md object-cover"
-          />
-        ) : (
-          <div className="w-8 h-8 flex items-center justify-center rounded-md bg-neutral-200 text-neutral-600 text-[15px]">
-            {item.type === "folder" ? "📁" : "📄"}
-          </div>
-        )}
+        <img
+          src={fileIconMap[determineIconKey(item)]}
+          alt={`${item.source} ${item.type}`}
+          className="w-10 h-10"
+        />
 
         <div className="flex flex-col overflow-hidden">
           <span
