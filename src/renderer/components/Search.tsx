@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useSearch } from "../hooks/useSearch";
 import type { SearchResult } from "../types";
@@ -134,6 +134,8 @@ const determineIconKey = (item: SearchResult): IconKey => {
   return "default";
 };
 
+const MAX_VISIBLE_RESULTS = 8;
+
 const Search: React.FC = () => {
   const {
     query,
@@ -152,43 +154,60 @@ const Search: React.FC = () => {
     else clearSearch();
   }, [query, debouncedSearch, clearSearch]);
 
+  const visibleResults = useMemo(
+    () => results.slice(0, MAX_VISIBLE_RESULTS),
+    [results]
+  );
+
+  const handleClear = useCallback(() => {
+    setQuery("");
+    clearSearch();
+    setSelected(0);
+  }, [clearSearch]);
+
+  // Keyboard navigation
+  const handleOpenResult = useCallback(
+    async (item: SearchResult | undefined) => {
+      if (!item) return;
+
+      try {
+        if (item.source === "drive" && item.metadata?.webViewLink) {
+          await window.api.openExternalUrl(item.metadata.webViewLink);
+        } else if (item.source === "local" && item.path) {
+          await window.api.openLocalPath(item.path);
+        }
+      } catch (err) {
+        console.error("Failed to open item:", err);
+      }
+    },
+    []
+  );
+
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (results.length === 0) return;
+      if (visibleResults.length === 0) return;
 
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelected((prev) => Math.min(prev + 1, results.length - 1));
+        setSelected((prev) => Math.min(prev + 1, visibleResults.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelected((prev) => Math.max(prev - 1, 0));
       } else if (e.key === "Escape") {
         handleClear();
       } else if (e.key === "Enter") {
-        const item = results[selected];
-        if (!item) return;
-
-        if (item.source === "drive" && item.metadata?.webViewLink) {
-          window.open(item.metadata.webViewLink, "_blank");
-        } else if (item.path) {
-          console.log("Open local item:", item.path);
-        }
+        e.preventDefault();
+        void handleOpenResult(visibleResults[selected]);
       }
     },
-    [results, selected]
+    [visibleResults, selected, handleClear, handleOpenResult]
   );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
-
-  const handleClear = () => {
-    setQuery("");
-    clearSearch();
-    setSelected(0);
-  };
 
   const renderResultItem = (
     item: SearchResult & { index: number },
@@ -250,7 +269,7 @@ const Search: React.FC = () => {
     );
   };
 
-  const totalResults = results.length;
+  const totalResults = visibleResults.length;
 
   return (
     <div className="w-full h-full flex flex-col bg-white rounded-xl overflow-hidden shadow-sm">
@@ -292,14 +311,14 @@ const Search: React.FC = () => {
               Something went wrong.
             </div>
           )}
-          {!loading && !error && totalResults === 0 && (
+          {/* {!loading && !error && totalResults === 0 && (
             <div className="px-6 py-8 text-center text-neutral-400 text-[15px]">
               No results found.
             </div>
-          )}
+          )} */}
           {!loading && !error && (
-            <div className="flex flex-col gap-1">
-              {results.map((item, index) =>
+            <div className="flex flex-col">
+              {visibleResults.map((item, index) =>
                 renderResultItem({ ...item, index }, index === selected)
               )}
             </div>

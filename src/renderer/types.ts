@@ -34,6 +34,8 @@ interface api {
 
   // Search
   search: (query: string, limit?: number) => Promise<SearchResults>;
+  openLocalPath: (filePath: string) => Promise<boolean>;
+  openExternalUrl: (url: string) => Promise<boolean>;
 }
 
 declare global {

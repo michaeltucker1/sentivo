@@ -13,5 +13,10 @@ contextBridge.exposeInMainWorld("api", {
   getIndexedFiles: () => ipcRenderer.invoke("google-drive:get-indexed-files"),
 
   // Search
-  search: (query: string, limit?: number) => ipcRenderer.invoke("search:query", query, limit),
+  search: (query: string, limit?: number) =>
+    ipcRenderer.invoke("search:query", query, limit),
+  openLocalPath: (filePath: string) =>
+    ipcRenderer.invoke("search:open-local-path", filePath),
+  openExternalUrl: (url: string) =>
+    ipcRenderer.invoke("search:open-external-url", url),
 });

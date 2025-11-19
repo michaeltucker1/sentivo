@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { ipcMain, shell } from "electron";
 import { search } from "../database/search.js";
 
 export const registerSearchIpc = () => {
@@ -10,6 +10,42 @@ export const registerSearchIpc = () => {
       console.error("Search error:", error);
       throw new Error(
         error instanceof Error ? error.message : "Unknown search error"
+      );
+    }
+  });
+
+  ipcMain.handle("search:open-local-path", async (_, filePath: string) => {
+    try {
+      if (!filePath) {
+        throw new Error("No file path provided");
+      }
+
+      const result = await shell.openPath(filePath);
+      if (result) {
+        throw new Error(result);
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Failed to open local path:", error);
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to open local file"
+      );
+    }
+  });
+
+  ipcMain.handle("search:open-external-url", async (_, url: string) => {
+    try {
+      if (!url) {
+        throw new Error("No URL provided");
+      }
+
+      await shell.openExternal(url);
+      return true;
+    } catch (error) {
+      console.error("Failed to open external URL:", error);
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to open external link"
       );
     }
   });
