@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useSearch } from "../hooks/useSearch";
 import type { SearchResult } from "../types";
+import Icon from "./global/Icon";
 
 const fileIconMap = {
   folder: new URL("../Assets/fileIcons/folder.svg", import.meta.url).href,
@@ -148,6 +149,7 @@ const Search: React.FC = () => {
   } = useSearch();
 
   const [selected, setSelected] = useState(0);
+  const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     if (query.trim().length > 0) debouncedSearch(query);
@@ -233,6 +235,13 @@ const Search: React.FC = () => {
     return () => window.removeEventListener("blur", handleWindowBlur);
   }, [handleCloseWindow]);
 
+  useEffect(() => {
+    const node = resultRefs.current[selected];
+    if (node) {
+      node.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [selected, visibleResults]);
+
   const renderResultItem = (
     item: SearchResult & { index: number },
     isActive: boolean
@@ -251,13 +260,16 @@ const Search: React.FC = () => {
     return (
       <div
         key={item.id}
-        onMouseEnter={() => setSelected(item.index)}
+        ref={(el) => {
+          resultRefs.current[item.index] = el;
+        }}
+        // onMouseEnter={() => setSelected(item.index)}
         onDoubleClick={() => void handleOpenResult(item)}
         className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-all duration-150 ease-out
           ${
             isActive
               ? "bg-neutral-200"
-              : "hover:bg-neutral-50"
+              : "hover:bg-neutral-100"
           }`}
       >
         <img
@@ -300,14 +312,17 @@ const Search: React.FC = () => {
     <div className="w-full h-full flex flex-col bg-white rounded-2xl overflow-hidden shadow-lg">
       {/* Search Bar */}
       <div className="sticky top-0 z-20 bg-white px-6 py-4 border-b border-neutral-200 flex items-center gap-3">
-        <input
-          autoFocus
-          type="text"
-          placeholder="Search..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 bg-transparent text-[24px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none font-normal"
-        />
+        <div className="flex items-center gap-3 flex-1">
+          <Icon name="search" size={28} className="text-neutral-400" />
+          <input
+            autoFocus
+            type="text"
+            placeholder="Sentivo Search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="flex-1 bg-transparent text-[24px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none font-normal"
+          />
+        </div>
         {query && (
           <span
             onClick={handleClear}
@@ -331,11 +346,11 @@ const Search: React.FC = () => {
               Something went wrong.
             </div>
           )}
-          {/* {!loading && !error && totalResults === 0 && (
-            <div className="px-6 py-8 text-center text-neutral-400 text-[15px]">
+          {!loading && !error && totalResults === 0 && (
+            <div className="px-6 py-7 text-center text-neutral-400 text-[20px]">
               No results found.
             </div>
-          )} */}
+          )}
           {!loading && !error && visibleResults.length > 0 &&(
             <div className="flex flex-col">
               {visibleResults.map((item, index) =>
