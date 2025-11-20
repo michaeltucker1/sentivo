@@ -11,6 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   root: path.resolve(__dirname, "src/renderer"),
+  envDir: __dirname,
   base: "./",
   build: {
     outDir: path.resolve(__dirname, "dist/renderer"),

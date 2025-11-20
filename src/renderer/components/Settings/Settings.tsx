@@ -2,6 +2,7 @@ import { useState } from "react";
 import Icon from "../global/Icon";
 import Button from "../global/Button";
 import Integrations from "./Integrations";
+import Feedback from "./Feedback";
 
 const Settings = () => {
     const [selectedButton, setSelectedButton] = useState("Preferences");
@@ -25,9 +26,9 @@ const Settings = () => {
 
                 <Button
                     label="Feedback"
-                    icon={<Icon name="feedback" size={22} color={selectedButton == "feedback" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "feedback" ? 2.2 : 1.9} />}
-                    onClick={() => setSelectedButton("feedback")}
-                    isSelected={selectedButton == "feedback"}
+                    icon={<Icon name="feedback" size={22} color={selectedButton == "Feedback" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "Feedback" ? 2.2 : 1.9} />}
+                    onClick={() => setSelectedButton("Feedback")}
+                    isSelected={selectedButton == "Feedback"}
                 />
 
                 <Button
@@ -40,6 +41,7 @@ const Settings = () => {
             </div>
             <div className="w-full p-4 space-y-2">
                 {selectedButton === "Integrations" && <Integrations />}
+                {selectedButton === "Feedback" && <Feedback />}
             </div>
         </div>
     )

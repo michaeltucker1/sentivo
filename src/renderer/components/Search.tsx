@@ -265,11 +265,10 @@ const Search: React.FC = () => {
         }}
         // onMouseEnter={() => setSelected(item.index)}
         onDoubleClick={() => void handleOpenResult(item)}
-        className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-all duration-150 ease-out
+        className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-all duration-150 ease-out select-none
           ${
-            isActive
-              ? "bg-neutral-200"
-              : "hover:bg-neutral-100"
+            isActive && "bg-neutral-200"
+
           }`}
       >
         <img
