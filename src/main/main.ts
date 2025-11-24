@@ -126,18 +126,19 @@ export const createSearchWindow = () => {
 
 export function createTray() {
   try {
-    // Use different paths for dev vs packaged app
+    const iconBaseName = 'trayIcon.png'; 
+    
     const iconPath = app.isPackaged
-      ? path.join(process.resourcesPath, "assets", "logo.pdf") // production
-      : path.join(__dirname, "assets/logo.pdf");              // development
+      ? path.join(process.resourcesPath, "assets", iconBaseName) // production
+      : path.join(__dirname, "assets", iconBaseName);              // development
     
     const image = nativeImage.createFromPath(iconPath);
-    image.setTemplateImage(true);
+    
+    image.setTemplateImage(true); 
 
     tray = new Tray(image);
     tray.setToolTip("Sentivo");
 
-    // Context menu
     const contextMenu = Menu.buildFromTemplate([
       { label: "Open Settings", click: () => toggleSettingsWindow() },
       { type: "separator" },
@@ -145,8 +146,6 @@ export function createTray() {
     ]);
     tray.setContextMenu(contextMenu);
 
-    // Click handler
-    // tray.on("click", () => toggleSettingsWindow());
   } catch (error) {
     console.error("Failed to create tray:", error);
   }

@@ -317,7 +317,7 @@ const Search: React.FC = () => {
   const totalResults = visibleResults.length;
 
   return (
-    <div className="w-full h-full flex flex-col bg-white rounded-2xl overflow-hidden shadow-lg">
+    <div className="search-window w-full h-full flex flex-col bg-white rounded-2xl overflow-hidden">
       {/* Search Bar */}
       <div className="sticky top-0 z-20 bg-white px-6 py-4 border-b border-neutral-200 flex items-center gap-3">
         <div className="flex items-center gap-3 flex-1">
