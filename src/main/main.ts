@@ -1,7 +1,7 @@
 import path from "path";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
-import { app, BrowserWindow, globalShortcut, Tray, Menu, screen, nativeImage } from "electron";
+import { app, BrowserWindow, globalShortcut, Tray, Menu, screen, nativeImage, ipcMain } from "electron";
 import { registerGoogleDriveIpc } from "./ipc/googleDriveIpc.js";
 import { initializeDatabase } from "./database/db.js";
 import { registerSearchIpc } from "./ipc/searchIpc.js";
@@ -153,28 +153,68 @@ export function createTray() {
 }
 
 function toggleSettingsWindow() {
-  if(searchWindow){
-    if (searchWindow.isVisible()) {
-      searchWindow.hide();
+  try {
+    // Hide search window if it's visible
+    if (searchWindow && !searchWindow.isDestroyed()) {
+      if (searchWindow.isVisible()) {
+        searchWindow.hide();
+      }
     }
-  }
-  
-  if (!settingsWindow) createSettingsWindow();
-  if (settingsWindow.isVisible()) {
-    settingsWindow.hide();
-  } else {
-    settingsWindow.show();
-    settingsWindow.focus();
+    
+    // Create or show settings window
+    if (!settingsWindow || settingsWindow.isDestroyed()) {
+      settingsWindow = createSettingsWindow();
+    }
+    
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      if (settingsWindow.isVisible()) {
+        settingsWindow.hide();
+      } else {
+        settingsWindow.show();
+        settingsWindow.focus();
+      }
+    }
+  } catch (error) {
+    console.error("Error toggling settings window:", error);
+    // Try to recreate the window if something went wrong
+    try {
+      settingsWindow = createSettingsWindow();
+      if (settingsWindow) {
+        settingsWindow.show();
+        settingsWindow.focus();
+      }
+    } catch (recreateError) {
+      console.error("Failed to recreate settings window:", recreateError);
+    }
   }
 }
 
 function toggleSearchWindow() {
-  if (!searchWindow) createSearchWindow();
-  if (searchWindow.isVisible()) {
-    searchWindow.hide();
-  } else {
-    searchWindow.show();
-    searchWindow.focus();
+  try {
+    if (!searchWindow || searchWindow.isDestroyed()) {
+      searchWindow = createSearchWindow();
+    }
+    
+    if (searchWindow && !searchWindow.isDestroyed()) {
+      if (searchWindow.isVisible()) {
+        searchWindow.hide();
+      } else {
+        searchWindow.show();
+        searchWindow.focus();
+      }
+    }
+  } catch (error) {
+    console.error("Error toggling search window:", error);
+    // Try to recreate the window if something went wrong
+    try {
+      searchWindow = createSearchWindow();
+      if (searchWindow) {
+        searchWindow.show();
+        searchWindow.focus();
+      }
+    } catch (recreateError) {
+      console.error("Failed to recreate search window:", recreateError);
+    }
   }
 }
 
@@ -182,6 +222,19 @@ app.whenReady().then(async () => {
   initializeDatabase();
   registerGoogleDriveIpc(googleClientId!, googleClientSecret!);
   registerSearchIpc();
+
+  // Register settings IPC handler
+  ipcMain.handle("settings:toggle-window", () => {
+    try {
+      toggleSettingsWindow();
+      return { success: true };
+    } catch (error) {
+      console.error("IPC: Failed to toggle settings window:", error);
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to toggle settings window"
+      );
+    }
+  });
 
   createTray();
   searchWindow = createSearchWindow();
@@ -203,4 +256,15 @@ app.whenReady().then(async () => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+
+// Handle window cleanup
+app.on("before-quit", () => {
+  // Clean up windows before quitting
+  if (searchWindow && !searchWindow.isDestroyed()) {
+    searchWindow.removeAllListeners();
+  }
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.removeAllListeners();
+  }
 });

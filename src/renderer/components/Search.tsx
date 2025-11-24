@@ -168,6 +168,14 @@ const Search: React.FC = () => {
     setSelected(0);
   }, [clearSearch]);
 
+  const handleToggleSettings = useCallback(async () => {
+    try {
+      await window.api.toggleSettingsWindow();
+    } catch (error) {
+      console.error("Failed to toggle settings window:", error);
+    }
+  }, []);
+
   const handleCloseWindow = useCallback(async () => {
     try {
       await window.api.hideSearchWindow();
@@ -362,7 +370,7 @@ const Search: React.FC = () => {
       )}
       {/* Bottom Bar with Logo */}
       <div className="mt-auto py-1 px-5.5 flex items-center justify-between">
-        <div className="flex items-center p-1.5 rounded-sm hover:bg-neutral-100">
+        <div className="flex items-center p-1.5 rounded-sm hover:bg-neutral-100 cursor-pointer" onClick={handleToggleSettings}>
            <Icon name="settings" size={24} className="text-neutral-400"/>
         </div>
         <div className="flex flex-row">

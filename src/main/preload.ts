@@ -21,4 +21,6 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("search:open-external-url", url),
   hideSearchWindow: () =>
     ipcRenderer.invoke("search:hide-window"),
+  toggleSettingsWindow: () =>
+    ipcRenderer.invoke("settings:toggle-window"),
 });

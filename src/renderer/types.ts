@@ -37,6 +37,8 @@ interface api {
   openLocalPath: (filePath: string) => Promise<boolean>;
   openExternalUrl: (url: string) => Promise<boolean>;
   hideSearchWindow: () => Promise<boolean>;
+  // Settings
+  toggleSettingsWindow: () => Promise<void>;
 }
 
 declare global {
