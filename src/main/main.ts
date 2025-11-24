@@ -1,10 +1,11 @@
 import path from "path";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
-import { app, BrowserWindow, globalShortcut, Tray, Menu, screen } from "electron";
+import { app, BrowserWindow, globalShortcut, Tray, Menu, screen, nativeImage } from "electron";
 import { registerGoogleDriveIpc } from "./ipc/googleDriveIpc.js";
 import { initializeDatabase } from "./database/db.js";
 import { registerSearchIpc } from "./ipc/searchIpc.js";
+import fs from "fs";
 
 // Load environment variables first
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -127,10 +128,13 @@ export function createTray() {
   try {
     // Use different paths for dev vs packaged app
     const iconPath = app.isPackaged
-      ? path.join(process.resourcesPath, "assets", "logo.png") // production
-      : path.join(__dirname, "assets/logo.png");              // development
+      ? path.join(process.resourcesPath, "assets", "logo.pdf") // production
+      : path.join(__dirname, "assets/logo.pdf");              // development
+    
+    const image = nativeImage.createFromPath(iconPath);
+    image.setTemplateImage(true);
 
-    tray = new Tray(iconPath);
+    tray = new Tray(image);
     tray.setToolTip("Sentivo");
 
     // Context menu

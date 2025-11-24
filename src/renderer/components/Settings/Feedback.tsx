@@ -67,7 +67,7 @@ const Feedback = () => {
         <div className="max-w-2xl space-y-5">
             <div>
                 <h1 className="text-2xl font-medium">Share feedback</h1>
-                <p className="text-lg text-[#6b6b7b]">Tell us what to improve. Sending emails the Sentivo team directly{hasEmailJsConfig ? "." : ", but setup is incomplete in this build."}</p>
+                <p className="text-lg text-[#6b6b7b]">Tell us what to improve. This will send an email to the Sentivo team directly.</p>
             </div>
 
             <div className="space-y-1">

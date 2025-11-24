@@ -3,6 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useSearch } from "../hooks/useSearch";
 import type { SearchResult } from "../types";
 import Icon from "./global/Icon";
+// import SentivoLogo from "../Assets/sentivologo.svg"
 
 const fileIconMap = {
   folder: new URL("../Assets/fileIcons/folder.svg", import.meta.url).href,
@@ -334,7 +335,7 @@ const Search: React.FC = () => {
 
       {/* Results */}
       {query.trim().length > 0 && (
-        <div className="w-full max-h-[65vh] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent">
+        <div className="w-full max-h-[65vh] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent border-b border-neutral-200">
           {/* {loading && (
             <div className="px-6 py-6 text-neutral-500 text-[15px]">
               Searching...
@@ -359,7 +360,32 @@ const Search: React.FC = () => {
           )}
         </div>
       )}
+      {/* Bottom Bar with Logo */}
+      <div className="mt-auto py-1 px-5.5 flex items-center justify-between">
+        <div className="flex items-center p-1.5 rounded-sm hover:bg-neutral-100">
+           <Icon name="settings" size={24} className="text-neutral-400"/>
+        </div>
+        <div className="flex flex-row">
+
+          <div className="flex justify-center items-center border border-neutral-300 bg-white rounded-md px-1 py-[2px]">
+            <Icon name="chevron-up" size={22} className="text-neutral-400" />
+          </div>
+
+          <div className="text-[16px] text-neutral-400 px-2 py-[2px]">
+            +
+          </div>
+
+          <div
+            className="text-[16px] text-neutral-400 border 
+                      border-neutral-300 rounded-md px-2 py-[2px] bg-white">
+            Space
+          </div>
+
+        </div>
+      </div>
     </div>
+
+    
   );
 };
 
