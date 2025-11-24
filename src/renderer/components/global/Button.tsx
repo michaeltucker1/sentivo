@@ -15,14 +15,14 @@ const Button: React.FC<ButtonProps> = ({ label, icon, onClick, isSelected = fals
                     <div className="pr-2">
                         {icon}
                     </div>
-                    <h2 className="font-sans text-[19px] text-[#2c3cca]">{label}</h2>
+                    <h2 className="font-sans text-[14px] text-[#2c3cca]">{label}</h2>
                 </div>
             ) : (
                 <div className="flex items-center px-2 py-1.25 rounded cursor-pointer hover:bg-[#e0e7ff]">
                     <div className="pr-2">
                         {icon}
                     </div>
-                    <h2 className="font-sans text-[19px] font-normal text-[#100f29]">{label}</h2>
+                    <h2 className="font-sans text-[14px] font-normal text-[#100f29]">{label}</h2>
                 </div> 
             )}
         </div>

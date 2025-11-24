@@ -283,20 +283,20 @@ const Search: React.FC = () => {
         <img
           src={fileIconMap[determineIconKey(item)]}
           alt={`${item.source} ${item.type}`}
-          className="w-10 h-10"
+          className="w-7 h-7"
         />
 
         <div className="flex flex-col overflow-hidden">
           <span
-            className={`text-[16px] font-medium truncate ${
+            className={`text-[13px] font-medium truncate ${
               isActive ? "text-neutral-900" : "text-neutral-800"
             }`}
           >
             {item.name}
           </span>
-          <div className="flex items-center gap-2 text-[13px] text-neutral-500 truncate">
+          <div className="flex items-center gap-2 text-[10px] text-neutral-500 truncate">
             <span
-              className={`text-[11px] font-semibold uppercase tracking-wide px-2 py-[1px] rounded-full border ${sourceBadgeClass}`}
+              className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-[1px] rounded-full border ${sourceBadgeClass}`}
             >
               {sourceLabel}
             </span>
@@ -319,22 +319,22 @@ const Search: React.FC = () => {
   return (
     <div className="search-window w-full h-full flex flex-col bg-white rounded-2xl overflow-hidden">
       {/* Search Bar */}
-      <div className="sticky top-0 z-20 bg-white px-6 py-4 border-b border-neutral-200 flex items-center gap-3">
+      <div className="sticky top-0 z-20 bg-white px-6 py-3 border-b border-neutral-200 flex items-center gap-3">
         <div className="flex items-center gap-3 flex-1">
-          <Icon name="search" size={28} className="text-neutral-400" />
+          <Icon name="search" size={24} className="text-neutral-400" />
           <input
             autoFocus
             type="text"
             placeholder="Sentivo Search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-transparent text-[24px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none font-normal"
+            className="flex-1 bg-transparent text-[20px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none font-normal"
           />
         </div>
         {query && (
           <span
             onClick={handleClear}
-            className="text-[16px] text-neutral-500 border border-neutral-300 rounded-md px-2 py-[2px] cursor-pointer hover:bg-neutral-100 transition"
+            className="text-[12px] text-neutral-400 border border-neutral-300 rounded-md px-2 py-[2px] cursor-pointer hover:bg-neutral-100 transition"
           >
             esc
           </span>
@@ -371,20 +371,20 @@ const Search: React.FC = () => {
       {/* Bottom Bar with Logo */}
       <div className="mt-auto py-1 px-5.5 flex items-center justify-between">
         <div className="flex items-center p-1.5 rounded-sm hover:bg-neutral-100 cursor-pointer" onClick={handleToggleSettings}>
-           <Icon name="settings" size={24} className="text-neutral-400"/>
+           <Icon name="settings" size={17} className="text-neutral-400"/>
         </div>
         <div className="flex flex-row">
 
           <div className="flex justify-center items-center border border-neutral-300 bg-white rounded-md px-1 py-[2px]">
-            <Icon name="chevron-up" size={22} className="text-neutral-400" />
+            <Icon name="chevron-up" size={15} className="text-neutral-400" />
           </div>
 
-          <div className="text-[16px] text-neutral-400 px-2 py-[2px]">
+          <div className="text-[10px] text-neutral-400 px-2 py-[2px]">
             +
           </div>
 
           <div
-            className="text-[16px] text-neutral-400 border 
+            className="text-[10px] text-neutral-400 border 
                       border-neutral-300 rounded-md px-2 py-[2px] bg-white">
             Space
           </div>

@@ -9,7 +9,7 @@ const Settings = () => {
 
     return (
         <div className="flex h-screen">
-            <div className="min-w-55 max-w-55 border-[#e4e4e7] border-r-1 p-4 space-y-2.5 bg-[#f8f8f8]"> 
+            <div className="min-w-40 max-w-40 border-[#e4e4e7] border-r-1 p-3 space-y-2.5 bg-[#f8f8f8]"> 
                 {/* <Button
                     label="Preferences"
                     icon={<Icon name="preferences" size={22} color={selectedButton == "Preferences" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "Preferences" ? 2.2 : 1.9}/>}
@@ -17,16 +17,18 @@ const Settings = () => {
                     isSelected={selectedButton == "Preferences"}
                 /> */}
 
+                <h1 className="text-lg font-medium">Settings</h1>
+
                 <Button
                     label="Integrations"
-                    icon={<Icon name="integrations" size={22} color={selectedButton == "Integrations" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "Integrations" ? 2.2 : 1.9}/>}
+                    icon={<Icon name="integrations" size={16} color={selectedButton == "Integrations" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "Integrations" ? 2.2 : 1.9}/>}
                     onClick={() => setSelectedButton("Integrations")}
                     isSelected={selectedButton == "Integrations"}
                 />
 
                 <Button
                     label="Feedback"
-                    icon={<Icon name="feedback" size={22} color={selectedButton == "Feedback" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "Feedback" ? 2.2 : 1.9} />}
+                    icon={<Icon name="feedback" size={16} color={selectedButton == "Feedback" ? "#2c3cca" : "#100f29"} strokeWidth={selectedButton == "Feedback" ? 2.2 : 1.9} />}
                     onClick={() => setSelectedButton("Feedback")}
                     isSelected={selectedButton == "Feedback"}
                 />

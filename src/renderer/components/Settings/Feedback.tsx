@@ -66,15 +66,15 @@ const Feedback = () => {
     return (
         <div className="max-w-2xl space-y-5">
             <div>
-                <h1 className="text-2xl font-medium">Share feedback</h1>
-                <p className="text-lg text-[#6b6b7b]">Tell us what to improve. This will send an email to the Sentivo team directly.</p>
+                <h1 className="text-lg font-medium">Share feedback</h1>
+                <p className="text-sm text-[#6b6b7b]">Tell us what to improve. This will send an email to the Sentivo team.</p>
             </div>
 
             <div className="space-y-1">
-                <label className="text-md font-medium text-[#3f3f45]" htmlFor="feedback-category">Feedback type</label>
+                <label className="text-sm font-medium text-[#3f3f45]" htmlFor="feedback-category">Feedback type</label>
                 <select
                     id="feedback-category"
-                    className="w-full rounded-md border border-[#d4d4d8] bg-white px-3 py-2 text-[16px] focus:border-[#2c3cca] focus:outline-none"
+                    className="w-full rounded-md border border-[#d4d4d8] bg-white px-3 py-2 text-[12px] focus:border-[#2c3cca] focus:outline-none"
                     value={category}
                     onChange={(evt) => setCategory(evt.target.value)}
                 >
@@ -87,11 +87,11 @@ const Feedback = () => {
             </div>
 
             <div className="space-y-1">
-                <label className="text-md font-medium text-[#3f3f45]" htmlFor="feedback-message">Details</label>
+                <label className="text-sm font-medium text-[#3f3f45]" htmlFor="feedback-message">Details</label>
                 <textarea
                     id="feedback-message"
                     rows={6}
-                    className="w-full resize-none rounded-md border border-[#d4d4d8] px-3 py-2 text-[16px] focus:border-[#2c3cca] focus:outline-none"
+                    className="w-full resize-none rounded-md border border-[#d4d4d8] px-3 py-2 text-[12px] focus:border-[#2c3cca] focus:outline-none"
                     placeholder="Share as much detail as you can so we can help quickly"
                     value={message}
                     onChange={(evt) => {
