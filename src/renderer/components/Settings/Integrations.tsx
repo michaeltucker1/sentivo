@@ -1,5 +1,5 @@
 import { useGoogleAuth } from "../../hooks/useGoogleAuth";
-const googleDriveIcon = '/googleDrive.png';
+import googleDriveIcon from "../../Assets/googleDrive.png"
 
 const Integrations = () => {
 
