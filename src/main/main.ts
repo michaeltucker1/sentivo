@@ -12,6 +12,7 @@ import {
   ipcMain,
   IpcMainInvokeEvent,
 } from "electron";
+import Store from "electron-store";
 import { registerGoogleDriveIpc } from "./ipc/googleDriveIpc.js";
 import { initializeDatabase } from "./database/db.js";
 import { registerSearchIpc } from "./ipc/searchIpc.js";
@@ -52,6 +53,10 @@ if (!googleClientId || !googleClientSecret) {
 let tray: Tray | null = null;
 let settingsWindow: BrowserWindow | null = null;
 let searchWindow: BrowserWindow | null = null;
+let onboardingWindow: BrowserWindow | null = null;
+
+// Initialize electron store for persisting app state
+const store = new Store();
 
 const RENDERER_PATH_BASE = isDev ? 'http://localhost' : path.join(__dirname, "../renderer/index.html");
 const VITE_PORT = 5173; // Standard Vite dev server port
@@ -144,6 +149,24 @@ export const createSearchWindow = () => {
     return win;
 };
 
+const createOnboardingWindow = () => {
+    const win = new BrowserWindow({
+        ...getWindowOptions(false),
+        title: "Welcome to Sentivo",
+        width: 650,
+        height: 550,
+        minWidth: 650,
+        minHeight: 550,
+        maxWidth: 650,
+        maxHeight: 550,
+        resizable: false,
+        maximizable: false,
+    });
+    
+    loadWindowContent(win, "onboarding");
+    return win;
+};
+
 // --- Tray Functions (Optimized Icon Path) ---
 
 export function createTray() {
@@ -170,6 +193,7 @@ export function createTray() {
 
     const contextMenu = Menu.buildFromTemplate([
       { label: "Open Settings", click: () => toggleSettingsWindow() },
+      { label: "Show Onboarding", click: () => toggleOnboardingWindow() },
       { type: "separator" },
       { label: "Quit", click: () => app.quit() },
     ]);
@@ -217,6 +241,30 @@ function toggleSearchWindow() {
     }
 }
 
+function toggleOnboardingWindow() {
+    // Hide other windows if visible
+    if (searchWindow && !searchWindow.isDestroyed() && searchWindow.isVisible()) {
+        searchWindow.hide();
+    }
+    if (settingsWindow && !settingsWindow.isDestroyed() && settingsWindow.isVisible()) {
+        settingsWindow.hide();
+    }
+    
+    if (!onboardingWindow || onboardingWindow.isDestroyed()) {
+        onboardingWindow = createOnboardingWindow();
+    }
+    
+    if (onboardingWindow && !onboardingWindow.isDestroyed()) {
+        if (onboardingWindow.isVisible()) {
+            onboardingWindow.hide();
+        } else {
+            onboardingWindow.show();
+            onboardingWindow.center();
+            onboardingWindow.focus();
+        }
+    }
+}
+
 // --- Electron Lifecycle ---
 
 app.whenReady().then(async () => {
@@ -244,10 +292,51 @@ app.whenReady().then(async () => {
     }
   });
 
+  // Register onboarding IPC handlers
+  ipcMain.handle("onboarding:is-first-launch", () => {
+    return !(store as any).get("onboardingCompleted", false);
+  });
+
+  ipcMain.handle("onboarding:set-complete", () => {
+    (store as any).set("onboardingCompleted", true);
+    return { success: true };
+  });
+
+  ipcMain.handle("onboarding:close-and-open-search", (event: IpcMainInvokeEvent) => {
+    try {
+      // Mark onboarding as complete
+      (store as any).set("onboardingCompleted", true);
+      
+      // Close onboarding window
+      if (onboardingWindow && !onboardingWindow.isDestroyed()) {
+        onboardingWindow.close();
+        onboardingWindow = null;
+      }
+      
+      // Show search window
+      toggleSearchWindow();
+      
+      return { success: true };
+    } catch (error) {
+      console.error("IPC: Failed to close onboarding and open search:", error);
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to close onboarding and open search"
+      );
+    }
+  });
+
   // Create windows/tray
   createTray();
   searchWindow = createSearchWindow();
   settingsWindow = createSettingsWindow();
+
+  // Check if this is the first launch and show onboarding if needed
+  const isFirstLaunch = !(store as any).get("onboardingCompleted", false);
+  if (isFirstLaunch) {
+    onboardingWindow = createOnboardingWindow();
+    onboardingWindow.show();
+    onboardingWindow.center();
+  }
 
   // Register ⌘ + Space
   globalShortcut.register('Control+Space', toggleSearchWindow);

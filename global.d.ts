@@ -18,6 +18,10 @@ declare global {
       hideSearchWindow: () => Promise<void>;
       // Settings
       toggleSettingsWindow: () => Promise<void>;
+      // Onboarding
+      closeOnboardingAndOpenSearch: () => Promise<{ success: boolean }>;
+      isFirstLaunch: () => Promise<boolean>;
+      setOnboardingComplete: () => Promise<{ success: boolean }>;
     };
   }
 

@@ -22,4 +22,12 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("search:hide-window"),
   toggleSettingsWindow: () =>
     ipcRenderer.invoke("settings:toggle-window"),
+
+  // Onboarding
+  closeOnboardingAndOpenSearch: () =>
+    ipcRenderer.invoke("onboarding:close-and-open-search"),
+  isFirstLaunch: () =>
+    ipcRenderer.invoke("onboarding:is-first-launch"),
+  setOnboardingComplete: () =>
+    ipcRenderer.invoke("onboarding:set-complete"),
 });

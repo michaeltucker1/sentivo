@@ -2,6 +2,7 @@ import React from "react";
 import { useGoogleAuth } from "../hooks/useGoogleAuth";
 import Search from "./Search"; 
 import Settings from "./Settings/Settings";
+import Onboarding from "./Onboarding/Onboarding";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 const App = () => {
@@ -13,6 +14,7 @@ const App = () => {
       <Route path="/" element={<Navigate to="/search" replace />} />
       <Route path="/search" element={<Search />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/onboarding" element={<Onboarding />} />
       <Route path="*" element={<Navigate to="/search" replace />} />
     </Routes>
     // <Settings />
