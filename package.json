@@ -5,8 +5,10 @@
   "main": "./dist/main/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"vite build --config vite.preload.config.ts --watch\" \"wait-on tcp:5173 && electron .\"",
-    "build": "vite build && vite build --config vite.preload.config.ts && tsc -p tsconfig.json && cp -r src/main/assets dist/main/",
+    "build:dev": "vite build && vite build --config vite.preload.config.ts && tsc -p tsconfig.json && cp -r src/main/assets dist/main/",
     "build:prod": "electron-builder --mac --universal",
+    "clean": "rm -rf dist release",
+    "build": "npm run clean && npm run build:dev && npm run build:prod",
     "postinstall": "electron-rebuild"
   },
   "keywords": [],
