@@ -3,7 +3,6 @@ import { formatDistanceToNow } from "date-fns";
 import { useSearch } from "../hooks/useSearch";
 import type { SearchResult } from "../types";
 import Icon from "./global/Icon";
-// import SentivoLogo from "../Assets/sentivologo.svg"
 
 const fileIconMap = {
   folder: new URL("../Assets/fileIcons/folder.svg", import.meta.url).href,

@@ -16,7 +16,7 @@ const Icon: React.FC<IconProps> = ({
   strokeWidth = 2,
   className,
 }) => {
-  const iconPath = `../../Assets/${name}.svg`;
+  const iconPath = new URL(`../../Assets/${name}.svg`, import.meta.url).href;
 
   return (
     <ReactSVG
