@@ -1,139 +1,168 @@
 import path from "path";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
-import { app, BrowserWindow, globalShortcut, Tray, Menu, screen, nativeImage, ipcMain } from "electron";
+import {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  Tray,
+  Menu,
+  screen,
+  nativeImage,
+  ipcMain,
+  IpcMainInvokeEvent,
+} from "electron";
 import { registerGoogleDriveIpc } from "./ipc/googleDriveIpc.js";
 import { initializeDatabase } from "./database/db.js";
 import { registerSearchIpc } from "./ipc/searchIpc.js";
 import fs from "fs";
 
-// Load environment variables first
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const envPath = path.join(__dirname, '..', '..', '.env');
+// --- Path and Environment Setup ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Determine the root path of the project, robust in both dev and packaged modes.
+const isDev = !app.isPackaged;
+const appRoot = isDev ? path.join(__dirname, '..', '..') : path.join(__dirname, '..');
+
+// Load environment variables
+const envPath = isDev 
+  ? path.join(appRoot, '.env')
+  : path.join(process.resourcesPath, '.env');
+
 dotenv.config({ path: envPath });
 
 // Verify environment variables are loaded
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-let tray: any = null;
-let settingsWindow: any = null;
-let searchWindow: any = null;
-
 if (!googleClientId || !googleClientSecret) {
   console.error('Error: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set in .env');
-  process.exit(1);
+  console.error('Env path:', envPath);
+  console.error('App root:', appRoot);
+  console.error('Is packaged:', app.isPackaged);
+  if (!isDev) {
+    console.log('Continuing without Google Drive integration in production...');
+  } else {
+    process.exit(1);
+  }
 }
 
-const createSettingsWindow = () => {
-  const win = new BrowserWindow({
-    width: 650,
-    height: 550,
-    minWidth: 650,
-    minHeight: 550,
-    maxWidth: 650,
-    maxHeight: 550,
-    resizable: false,        
-    maximizable: false,
-    show: false,
-    title: "Sentivo",
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
+// --- Global Window and Tray Declarations (with Types) ---
+let tray: Tray | null = null;
+let settingsWindow: BrowserWindow | null = null;
+let searchWindow: BrowserWindow | null = null;
 
-  if (app.isPackaged) {
-    win.loadFile(path.join(__dirname, "../renderer/index.html"), {
-      hash: "settings",
-    });
-  } else {
-    const tryLoadUrl = (port: number) => {
-      const url = `http://localhost:${port}/#/settings`;
-      win.loadURL(url).catch(() => {
-        if (port < 5180) {
-          tryLoadUrl(port + 1);
-        } else {
-          console.error("Could not connect to Vite dev server");
-        }
-      });
+const RENDERER_PATH_BASE = isDev ? 'http://localhost' : path.join(__dirname, "../renderer/index.html");
+const VITE_PORT = 5173; // Standard Vite dev server port
+
+// --- Window Creation Functions ---
+
+const getWindowOptions = (isSearch: boolean) => {
+    const baseOptions: Electron.BrowserWindowConstructorOptions = {
+        title: "Sentivo",
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false,
+        },
     };
-    tryLoadUrl(5173);
-    win.webContents.openDevTools();
-  }
 
-  return win;
+    if (isSearch) {
+        const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+        const winWidth = 600;
+        const winHeight = 500;
+        return {
+            ...baseOptions,
+            width: winWidth,
+            height: winHeight,
+            minWidth: winWidth,
+            minHeight: winHeight,
+            maxWidth: winWidth,
+            maxHeight: winHeight,
+            x: Math.round(width / 2 - winWidth / 2),
+            y: Math.round(height / 4),
+            show: false,
+            frame: false,
+            transparent: true,
+            resizable: false,
+            alwaysOnTop: true,
+            backgroundColor: "#00000000",
+        };
+    } else {
+        return {
+            ...baseOptions,
+            width: 650,
+            height: 550,
+            minWidth: 650,
+            minHeight: 550,
+            maxWidth: 650,
+            maxHeight: 550,
+            resizable: false,
+            maximizable: false,
+            show: false,
+        };
+    }
+};
+
+const loadWindowContent = (win: BrowserWindow, hash: string) => {
+    if (isDev) {
+        const tryLoadUrl = (port: number) => {
+            const url = `${RENDERER_PATH_BASE}:${port}/#/${hash}`;
+            win.loadURL(url).catch(() => {
+                if (port < VITE_PORT + 10) { // Check a range of ports
+                    tryLoadUrl(port + 1);
+                } else {
+                    console.error(`Could not connect to dev server on ports ${VITE_PORT}-${VITE_PORT + 10}`);
+                }
+            });
+        };
+        tryLoadUrl(VITE_PORT);
+        // win.webContents.openDevTools(hash === 'search' ? { mode: "detach" } : {});
+    } else {
+        // Production path: Load file with hash
+        win.loadFile(RENDERER_PATH_BASE, { hash });
+    }
+};
+
+const createSettingsWindow = () => {
+    const win = new BrowserWindow(getWindowOptions(false));
+    loadWindowContent(win, "settings");
+    return win;
 };
 
 export const createSearchWindow = () => {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+    const win = new BrowserWindow(getWindowOptions(true));
 
-  // Dimensions: wider but short (room for search bar + results)
-  const winWidth = 600;
-  const winHeight = 500;
-
-  const win = new BrowserWindow({
-    width: winWidth,
-    height: winHeight,
-    minWidth: winWidth,
-    minHeight: winHeight,
-    maxWidth: winWidth,
-    maxHeight: winHeight,     
-    x: Math.round(width / 2 - winWidth / 2),
-    y: Math.round(height / 4), // Slightly higher than center
-    show: false,
-    frame: false,
-    transparent: true,
-    resizable: false,
-    alwaysOnTop: true,
-    title: "Sentivo",
-    backgroundColor: "#00000000", // transparent background
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-
-  if (app.isPackaged) {
-    win.loadFile(path.join(__dirname, "../renderer/index.html"), {
-      hash: "search",
-    });
-  } else {
-    const tryLoadUrl = (port: number) => {
-      const url = `http://localhost:${port}/#/search`;
-      win.loadURL(url).catch(() => {
-        if (port < 5180) {
-          tryLoadUrl(port + 1);
-        } else {
-          console.error("Could not connect to Vite dev server for search window");
+    win.on("blur", () => {
+        if (!win.webContents.isDevToolsOpened()) {
+            win.hide();
         }
-      });
-    };
-    tryLoadUrl(5173);
-    win.webContents.openDevTools({ mode: "detach" });
-  }
+    });
 
-  win.on("blur", () => {
-    if (!win.webContents.isDevToolsOpened()) {
-      win.hide();
-    }
-  });
-
-  return win;
+    loadWindowContent(win, "search");
+    return win;
 };
+
+// --- Tray Functions (Optimized Icon Path) ---
 
 export function createTray() {
   try {
     const iconBaseName = 'trayIcon.png'; 
+  
+    const iconPath = isDev
+      ? path.join(__dirname, "assets", iconBaseName)
+      : path.join(process.resourcesPath, "assets", iconBaseName); 
     
-    const iconPath = app.isPackaged
-      ? path.join(process.resourcesPath, "assets", iconBaseName) // production
-      : path.join(__dirname, "assets", iconBaseName);              // development
-    
+    // IMPORTANT: Check if file exists before creating nativeImage
+    if (!fs.existsSync(iconPath)) {
+        console.error(`Tray icon not found at: ${iconPath}`);
+        return;
+    }
+
     const image = nativeImage.createFromPath(iconPath);
     
+    // IMPORTANT: setTemplateImage is crucial for macOS Dark Mode compatibility
     image.setTemplateImage(true); 
 
     tray = new Tray(image);
@@ -151,79 +180,59 @@ export function createTray() {
   }
 }
 
+// --- Window Management Functions (Cleanup) ---
+
 function toggleSettingsWindow() {
-  try {
-    // Hide search window if it's visible
-    if (searchWindow && !searchWindow.isDestroyed()) {
-      if (searchWindow.isVisible()) {
+    // Hide search window if visible
+    if (searchWindow && !searchWindow.isDestroyed() && searchWindow.isVisible()) {
         searchWindow.hide();
-      }
     }
     
-    // Create or show settings window
     if (!settingsWindow || settingsWindow.isDestroyed()) {
-      settingsWindow = createSettingsWindow();
+        settingsWindow = createSettingsWindow();
     }
     
     if (settingsWindow && !settingsWindow.isDestroyed()) {
-      if (settingsWindow.isVisible()) {
-        settingsWindow.hide();
-      } else {
-        settingsWindow.show();
-        settingsWindow.focus();
-      }
+        if (settingsWindow.isVisible()) {
+            settingsWindow.hide();
+        } else {
+            settingsWindow.show();
+            settingsWindow.focus();
+        }
     }
-  } catch (error) {
-    console.error("Error toggling settings window:", error);
-    // Try to recreate the window if something went wrong
-    try {
-      settingsWindow = createSettingsWindow();
-      if (settingsWindow) {
-        settingsWindow.show();
-        settingsWindow.focus();
-      }
-    } catch (recreateError) {
-      console.error("Failed to recreate settings window:", recreateError);
-    }
-  }
 }
 
 function toggleSearchWindow() {
-  try {
     if (!searchWindow || searchWindow.isDestroyed()) {
-      searchWindow = createSearchWindow();
+        searchWindow = createSearchWindow();
     }
     
     if (searchWindow && !searchWindow.isDestroyed()) {
-      if (searchWindow.isVisible()) {
-        searchWindow.hide();
-      } else {
-        searchWindow.show();
-        searchWindow.focus();
-      }
+        if (searchWindow.isVisible()) {
+            searchWindow.hide();
+        } else {
+            searchWindow.show();
+            searchWindow.focus();
+        }
     }
-  } catch (error) {
-    console.error("Error toggling search window:", error);
-    // Try to recreate the window if something went wrong
-    try {
-      searchWindow = createSearchWindow();
-      if (searchWindow) {
-        searchWindow.show();
-        searchWindow.focus();
-      }
-    } catch (recreateError) {
-      console.error("Failed to recreate search window:", recreateError);
-    }
-  }
 }
+
+// --- Electron Lifecycle ---
 
 app.whenReady().then(async () => {
   initializeDatabase();
-  registerGoogleDriveIpc(googleClientId!, googleClientSecret!);
+  
+  // Only register Google Drive IPC if credentials are available
+  if (googleClientId && googleClientSecret) {
+    registerGoogleDriveIpc(googleClientId, googleClientSecret);
+  } else {
+    console.log('Google Drive integration disabled - no credentials available');
+  }
+  
   registerSearchIpc();
 
-  // Register settings IPC handler
-  ipcMain.handle("settings:toggle-window", () => {
+  // Register settings IPC handler (kept original logic)
+  ipcMain.handle("settings:toggle-window", (event: IpcMainInvokeEvent) => {
     try {
       toggleSettingsWindow();
       return { success: true };
@@ -235,6 +244,7 @@ app.whenReady().then(async () => {
     }
   });
 
+  // Create windows/tray
   createTray();
   searchWindow = createSearchWindow();
   settingsWindow = createSettingsWindow();
@@ -242,28 +252,30 @@ app.whenReady().then(async () => {
   // Register ⌘ + Space
   globalShortcut.register('Control+Space', toggleSearchWindow);
 
+  // Clear default shortcuts to prevent conflicts and ensure production cleanliness
   globalShortcut.register("CommandOrControl+R", () => {});
   globalShortcut.register("CommandOrControl+Shift+R", () => {});
   globalShortcut.register("CommandOrControl+=", () => {});
   globalShortcut.register("CommandOrControl+-", () => {});
   globalShortcut.register("CommandOrControl+0", () => {});
+  // Optional: Add the same to the search and settings windows explicitly
+  // searchWindow.setMenu(null);
+  // settingsWindow.setMenu(null);
+
 
   app.on("activate", () => {
+    // On macOS it's common to re-create a window in the app when the dock icon is clicked
     if (BrowserWindow.getAllWindows().length === 0) createSettingsWindow();
   });
 });
 
 app.on("window-all-closed", () => {
+  // Quit application on all platforms except macOS
   if (process.platform !== "darwin") app.quit();
 });
 
-// Handle window cleanup
+// Handle window cleanup before quit
 app.on("before-quit", () => {
-  // Clean up windows before quitting
-  if (searchWindow && !searchWindow.isDestroyed()) {
-    searchWindow.removeAllListeners();
-  }
-  if (settingsWindow && !settingsWindow.isDestroyed()) {
-    settingsWindow.removeAllListeners();
-  }
+  globalShortcut.unregisterAll(); // Ensure all shortcuts are released
+  // The global variables hold references, so explicit removal is optional but clean
 });

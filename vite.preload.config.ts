@@ -14,8 +14,12 @@ export default defineConfig({
     outDir: path.resolve(__dirname, "dist/main"),
     emptyOutDir: false,
     minify: false,
+    target: "node14",
     rollupOptions: {
       external: ["electron"],
+      output: {
+        format: "cjs"
+      }
     },
   },
 });

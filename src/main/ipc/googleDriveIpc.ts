@@ -36,7 +36,7 @@ export const registerGoogleDriveIpc = (clientId: string, clientSecret: string) =
     return { success: true };
   });
   
-  ipcMain.handle("google-drive:get-files", async () => {
+  ipcMain.handle("google-drive:get-indexed-files", async () => {
     return getAllFiles();
   });
 

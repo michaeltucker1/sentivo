@@ -29,8 +29,8 @@ interface api {
   signOutGoogleDrive: () => Promise<{ success: boolean }>;
   getGoogleDriveToken: () => Promise<string | null>;
   listGoogleDriveFiles: () => Promise<any[]>;
-  saveGoogleDriveFiles: (files: SimpleGoogleDriveFile[]) => Promise<{ success: boolean }>;
-  getIndexedFiles: () => Promise<SimpleGoogleDriveFile[]>;
+  saveGoogleDriveFiles: (files: any[]) => Promise<{ success: boolean }>;
+  getIndexedFiles: () => Promise<any[]>;
 
   // Search
   search: (query: string, limit?: number) => Promise<SearchResults>;
