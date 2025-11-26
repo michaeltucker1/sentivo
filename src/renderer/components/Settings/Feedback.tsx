@@ -1,15 +1,6 @@
 import { useMemo, useState } from "react";
-import emailjs from "@emailjs/browser";
 
-const DEFAULT_FEEDBACK_EMAIL = "sentivo.contact@gmail.com";
-const TARGET_EMAIL = import.meta.env.VITE_FEEDBACK_EMAIL ?? DEFAULT_FEEDBACK_EMAIL;
-const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-// const TARGET_EMAIL = process.env.FEEDBACK_EMAIL ?? DEFAULT_FEEDBACK_EMAIL;
-// const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID;
-// const EMAILJS_TEMPLATE_ID = process.env.EMAILJS_TEMPLATE_ID;
-// const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY;
+const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 
 const categories = [
     { label: "Bug", value: "Bug" },
@@ -19,43 +10,51 @@ const categories = [
 
 const Feedback = () => {
     const [category, setCategory] = useState(categories[0].value);
+    const [userEmail, setUserEmail] = useState("");
     const [message, setMessage] = useState("");
     const [status, setStatus] = useState<"idle" | "error" | "sent" | "sending">("idle");
     const [errorMessage, setErrorMessage] = useState("");
-    console.log(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY);
-    const hasEmailJsConfig = Boolean(EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY);
-    const canSend = useMemo(() => message.trim().length > 0, [message]);
+    const hasAirtableConfig = Boolean(AIRTABLE_TOKEN);
+    const canSend = useMemo(() => {
+        const emailValid = userEmail.trim().length > 0 && userEmail.includes("@");
+        const messageValid = message.trim().length > 0;
+        return emailValid && messageValid;
+    }, [userEmail, message]);
 
     const handleSend = () => {
-        if (!message.trim().length) {
+        const emailValid = userEmail.trim().length > 0 && userEmail.includes("@");
+        const messageValid = message.trim().length > 0;
+        
+        if (!emailValid) {
+            setStatus("error");
+            setErrorMessage("Please enter a valid email address.");
+            return;
+        }
+        
+        if (!messageValid) {
             setStatus("error");
             setErrorMessage("Add some details before sending.");
             return;
         }
 
-        if (!hasEmailJsConfig) {
+        if (!hasAirtableConfig) {
             setStatus("error");
-            setErrorMessage("Feedback email configuration missing.");
+            setErrorMessage("Airtable configuration missing.");
             return;
         }
 
         setStatus("sending");
         setErrorMessage("");
 
-        emailjs
-            .send(
-                EMAILJS_SERVICE_ID!,
-                EMAILJS_TEMPLATE_ID!,
-                {
-                    category,
-                    message: message.trim(),
-                    to_email: TARGET_EMAIL
-                },
-                EMAILJS_PUBLIC_KEY
-            )
+        window.api.sendFeedback({
+            category,
+            userEmail: userEmail.trim(),
+            message: message.trim()
+        })
             .then(() => {
                 setStatus("sent");
                 setMessage("");
+                setUserEmail("");
             })
             .catch(() => {
                 setStatus("error");
@@ -84,6 +83,21 @@ const Feedback = () => {
                         </option>
                     ))}
                 </select>
+            </div>
+
+            <div className="space-y-1">
+                <label className="text-sm font-medium text-[#3f3f45]" htmlFor="feedback-email">Your email *</label>
+                <input
+                    id="feedback-email"
+                    type="email"
+                    className="w-full rounded-md border border-[#d4d4d8] bg-white px-3 py-2 text-[12px] focus:border-[#2c3cca] focus:outline-none"
+                    placeholder="your.email@example.com"
+                    value={userEmail}
+                    onChange={(evt) => {
+                        setUserEmail(evt.target.value);
+                        setStatus("idle");
+                    }}
+                />
             </div>
 
             <div className="space-y-1">
@@ -121,6 +135,7 @@ const Feedback = () => {
                     type="button"
                     onClick={() => {
                         setMessage("");
+                        setUserEmail("");
                         setStatus("idle");
                     }}
                     className="rounded-md border border-transparent px-4 py-2 text-sm font-medium text-[#2c3cca] hover:bg-[#e0e7ff]"

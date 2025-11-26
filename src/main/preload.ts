@@ -30,4 +30,11 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("onboarding:is-first-launch"),
   setOnboardingComplete: () =>
     ipcRenderer.invoke("onboarding:set-complete"),
+
+  // Feedback
+  sendFeedback: (data: {
+    category: string;
+    userEmail: string;
+    message: string;
+  }) => ipcRenderer.invoke("feedback:send", data),
 });

@@ -39,6 +39,18 @@ interface api {
   hideSearchWindow: () => Promise<boolean>;
   // Settings
   toggleSettingsWindow: () => Promise<void>;
+
+  // Onboarding
+  closeOnboardingAndOpenSearch: () => Promise<{ success: boolean }>;
+  isFirstLaunch: () => Promise<boolean>;
+  setOnboardingComplete: () => Promise<{ success: boolean }>;
+
+  // Feedback
+  sendFeedback: (data: {
+    category: string;
+    userEmail: string;
+    message: string;
+  }) => Promise<{ success: boolean }>;
 }
 
 declare global {

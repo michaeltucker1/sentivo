@@ -16,6 +16,7 @@ import Store from "electron-store";
 import { registerGoogleDriveIpc } from "./ipc/googleDriveIpc.js";
 import { initializeDatabase } from "./database/db.js";
 import { registerSearchIpc } from "./ipc/searchIpc.js";
+import { registerFeedbackIpc } from "./ipc/feedbackIpc.js";
 import fs from "fs";
 
 // --- Path and Environment Setup ---
@@ -278,6 +279,7 @@ app.whenReady().then(async () => {
   }
   
   registerSearchIpc();
+  registerFeedbackIpc();
 
   // Register settings IPC handler (kept original logic)
   ipcMain.handle("settings:toggle-window", (event: IpcMainInvokeEvent) => {

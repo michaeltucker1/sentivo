@@ -22,6 +22,12 @@ declare global {
       closeOnboardingAndOpenSearch: () => Promise<{ success: boolean }>;
       isFirstLaunch: () => Promise<boolean>;
       setOnboardingComplete: () => Promise<{ success: boolean }>;
+      // Feedback
+      sendFeedback: (data: {
+        category: string;
+        userEmail: string;
+        message: string;
+      }) => Promise<{ success: boolean }>;
     };
   }
 
@@ -30,6 +36,7 @@ declare global {
     readonly VITE_EMAILJS_SERVICE_ID?: string;
     readonly VITE_EMAILJS_TEMPLATE_ID?: string;
     readonly VITE_EMAILJS_PUBLIC_KEY?: string;
+    readonly VITE_AIRTABLE_TOKEN?: string;
   }
 
   interface ImportMeta {
