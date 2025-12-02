@@ -4,6 +4,60 @@ import { useSearch } from "../hooks/useSearch";
 import type { SearchResult } from "../types";
 import Icon from "./global/Icon";
 
+const UpdateBadge = () => {
+  const [updateAvailable, setUpdateAvailable] = useState(true);
+  const [version, setVersion] = useState("1.0.1");
+
+  useEffect(() => {
+    // Type assertion to access the api object with any type
+    const api = window.api as any;
+    
+    const handleUpdateAvailable = (_event: any, info: { version: string }) => {
+      setUpdateAvailable(true);
+      setVersion(info.version);
+    };
+
+    const handleUpdateNotAvailable = () => {
+      setUpdateAvailable(false);
+    };
+
+    // Register event listeners
+    api.onUpdateAvailable(handleUpdateAvailable);
+    
+    // Listen for update-not-available event through error handler
+    api.onError((_event: any, error: Error) => {
+      if (error?.message?.includes('update-not-available')) {
+        handleUpdateNotAvailable();
+      }
+    });
+
+    // Initial check
+    api.getUpdateStatus().then((status: { isUpdateAvailable: boolean; version?: string }) => {
+      if (status.isUpdateAvailable && status.version) {
+        setUpdateAvailable(true);
+        setVersion(status.version);
+      } else {
+        setUpdateAvailable(false);
+      }
+    });
+
+    // Cleanup function to remove event listeners
+    return () => {
+      // Remove the listeners we added
+      api.onUpdateAvailable(() => {});
+      api.onError(() => {});
+    };
+  }, []);
+
+  if (!updateAvailable) return null;
+
+  return (
+    <div className="flex items-center justify-center px-2 py-0.5 text-xs text-white bg-blue-400 rounded-full">
+      Update v{version} available
+    </div>
+  );
+};
+
 const fileIconMap = {
   folder: new URL("../Assets/fileIcons/folder.svg", import.meta.url).href,
   image: new URL("../Assets/fileIcons/image.svg", import.meta.url).href,
@@ -343,11 +397,6 @@ const Search: React.FC = () => {
       {/* Results */}
       {query.trim().length > 0 && (
         <div className="w-full max-h-[65vh] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent border-b border-neutral-200">
-          {/* {loading && (
-            <div className="px-6 py-6 text-neutral-500 text-[15px]">
-              Searching...
-            </div>
-          )} */}
           {error && (
             <div className="px-6 py-6 text-red-500 text-[15px]">
               Something went wrong.
@@ -358,7 +407,7 @@ const Search: React.FC = () => {
               No results found.
             </div>
           )}
-          {!loading && !error && visibleResults.length > 0 &&(
+          {!loading && !error && visibleResults.length > 0 && (
             <div className="flex flex-col">
               {visibleResults.map((item, index) =>
                 renderResultItem({ ...item, index }, index === selected)
@@ -372,6 +421,10 @@ const Search: React.FC = () => {
         <div className="flex items-center p-1.5 rounded-sm hover:bg-neutral-100 cursor-pointer" onClick={handleToggleSettings}>
            <Icon name="settings" size={17} className="text-neutral-400"/>
         </div>
+        <div className="flex items-center justify-between px-4 py-2 bg-white">
+            <UpdateBadge />
+        </div>
+
         <div className="flex flex-row">
 
           <div className="flex justify-center items-center border border-neutral-300 bg-white rounded-md px-1 py-[2px]">
