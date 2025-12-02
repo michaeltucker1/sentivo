@@ -85,6 +85,14 @@ const UpdateBadge = () => {
     }
   };
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center px-2 py-0.5 text-xs text-white rounded-full cursor-pointer transition-colors bg-red-400">
+        {error}
+      </div>
+    )
+  }
+
   return (
     <div 
       onClick={handleUpdateClick}
