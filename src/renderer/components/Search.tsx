@@ -5,8 +5,9 @@ import type { SearchResult } from "../types";
 import Icon from "./global/Icon";
 
 const UpdateBadge = () => {
-  const [updateAvailable, setUpdateAvailable] = useState(true);
-  const [version, setVersion] = useState("1.0.1");
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [version, setVersion] = useState("");
+  const [error, setError] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
@@ -59,15 +60,14 @@ const UpdateBadge = () => {
       const status = await window.api.getUpdateStatus();
       
       if (!status.isUpdateAvailable) {
-        alert('No update available');
-        return;
+        setError('No update available')
       }
 
       if (!status.isDownloaded) {
         // If update is not downloaded yet, download it first
         const downloadResult = await window.api.downloadUpdate();
         if (!downloadResult.success) {
-          throw new Error(downloadResult.error || 'Failed to download update');
+          setError(downloadResult.error || 'Failed to download update')
         }
         // Wait a moment for the download to complete
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -76,12 +76,10 @@ const UpdateBadge = () => {
       // Now install the update
       const result = await window.api.installUpdate();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to install update');
+        setError(result.error || 'Failed to install update')
       }
     } catch (error) {
-      console.error('Update error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Update failed: ${errorMessage}`);
+      setError(error as string || 'Unknown error occurred')
     } finally {
       setIsUpdating(false);
     }

@@ -1,6 +1,6 @@
 {
   "name": "sentivo",
-  "version": "1.0.9-alpha",
+  "version": "1.0.10-alpha",
   "description": "",
   "main": "./dist/main/main.js",
   "scripts": {
@@ -79,7 +79,8 @@
     "mac": {
       "icon": "dist/main/assets/sentivo-icon.png",
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "identity": null
     },
