@@ -378,7 +378,7 @@ const Search: React.FC = () => {
           <input
             autoFocus
             type="text"
-            placeholder="Search your cloud and files..."
+            placeholder="Search your cloud and files"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 bg-transparent text-[20px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none font-normal"
