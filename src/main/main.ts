@@ -17,6 +17,7 @@ import { registerGoogleDriveIpc } from "./ipc/googleDriveIpc.js";
 import { initializeDatabase } from "./database/db.js";
 import { registerSearchIpc } from "./ipc/searchIpc.js";
 import { registerFeedbackIpc } from "./ipc/feedbackIpc.js";
+import { registerUpdaterIpc, registerWindow } from "./ipc/updaterIpc.js";
 import fs from "fs";
 
 // --- Path and Environment Setup ---
@@ -271,6 +272,9 @@ function toggleOnboardingWindow() {
 app.whenReady().then(async () => {
   initializeDatabase();
   
+  // Initialize auto-updater
+  registerUpdaterIpc();
+  
   // Only register Google Drive IPC if credentials are available
   if (googleClientId && googleClientSecret) {
     registerGoogleDriveIpc(googleClientId, googleClientSecret);
@@ -331,11 +335,17 @@ app.whenReady().then(async () => {
   createTray();
   searchWindow = createSearchWindow();
   settingsWindow = createSettingsWindow();
-
-  // Check if this is the first launch and show onboarding if needed
-  const isFirstLaunch = !(store as any).get("onboardingCompleted", false);
-  if (isFirstLaunch) {
+  
+  // Register windows with auto-updater
+  registerWindow(searchWindow);
+  registerWindow(settingsWindow);
+  
+  // Only show onboarding on first launch
+  if (!(store as any).get("onboardingCompleted", false)) {
     onboardingWindow = createOnboardingWindow();
+    if (onboardingWindow) {
+      registerWindow(onboardingWindow);
+    }
     onboardingWindow.show();
     onboardingWindow.center();
   }

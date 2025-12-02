@@ -31,6 +31,20 @@ contextBridge.exposeInMainWorld("api", {
   setOnboardingComplete: () =>
     ipcRenderer.invoke("onboarding:set-complete"),
 
+  // Auto-update
+  checkForUpdates: () => ipcRenderer.invoke('updater:check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('updater:download-update'),
+  getUpdateStatus: () => ipcRenderer.invoke('updater:get-status'),
+  installUpdate: () => ipcRenderer.invoke('updater:install-update'),
+  onUpdateAvailable: (callback: (event: any, info: any) => void) => 
+    ipcRenderer.on('updater:update-available', callback),
+  onDownloadProgress: (callback: (event: any, progress: any) => void) => 
+    ipcRenderer.on('updater:download-progress', callback),
+  onUpdateDownloaded: (callback: (event: any, info: any) => void) => 
+    ipcRenderer.on('updater:update-downloaded', callback),
+  onError: (callback: (event: any, error: Error) => void) => 
+    ipcRenderer.on('updater:error', callback),
+
   // Feedback
   sendFeedback: (data: {
     category: string;
