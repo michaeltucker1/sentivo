@@ -1,13 +1,13 @@
 import { BrowserWindow, ipcMain, app } from 'electron';
-import log from 'electron-log';
+// import log from 'electron-log';
 import updaterPkg from "electron-updater";
 const { autoUpdater } = updaterPkg;
 
 // Configure autoUpdater logging
-if (autoUpdater.logger) {
-  autoUpdater.logger = log;
-  log.transports.file.level = 'info';
-}
+// if (autoUpdater.logger) {
+//   autoUpdater.logger = log;
+//   log.transports.file.level = 'info';
+// }
 
 // Store update state in memory
 const updateState = {
