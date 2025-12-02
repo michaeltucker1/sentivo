@@ -55,10 +55,34 @@ const UpdateBadge = () => {
   const handleUpdateClick = async () => {
     try {
       setIsUpdating(true);
-      // Trigger the update installation
-      await window.api.invoke('updater:install-update');
+      // First, check if an update is available
+      const status = await window.api.getUpdateStatus();
+      
+      if (!status.isUpdateAvailable) {
+        alert('No update available');
+        return;
+      }
+
+      if (!status.isDownloaded) {
+        // If update is not downloaded yet, download it first
+        const downloadResult = await window.api.downloadUpdate();
+        if (!downloadResult.success) {
+          throw new Error(downloadResult.error || 'Failed to download update');
+        }
+        // Wait a moment for the download to complete
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
+      // Now install the update
+      const result = await window.api.installUpdate();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to install update');
+      }
     } catch (error) {
-      console.error('Failed to install update:', error);
+      console.error('Update error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Update failed: ${errorMessage}`);
+    } finally {
       setIsUpdating(false);
     }
   };
