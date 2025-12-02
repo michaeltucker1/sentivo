@@ -7,6 +7,7 @@ import Icon from "./global/Icon";
 const UpdateBadge = () => {
   const [updateAvailable, setUpdateAvailable] = useState(true);
   const [version, setVersion] = useState("1.0.1");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     // Type assertion to access the api object with any type
@@ -51,9 +52,25 @@ const UpdateBadge = () => {
 
   if (!updateAvailable) return null;
 
+  const handleUpdateClick = async () => {
+    try {
+      setIsUpdating(true);
+      // Trigger the update installation
+      await window.api.invoke('updater:install-update');
+    } catch (error) {
+      console.error('Failed to install update:', error);
+      setIsUpdating(false);
+    }
+  };
+
   return (
-    <div className="flex items-center justify-center px-2 py-0.5 text-xs text-white bg-blue-400 rounded-full">
-      Update v{version} available
+    <div 
+      onClick={handleUpdateClick}
+      className={`flex items-center justify-center px-2 py-0.5 text-xs text-white rounded-full cursor-pointer transition-colors ${
+        isUpdating ? 'bg-blue-600' : 'bg-blue-400 hover:bg-blue-500'
+      }`}
+    >
+      {isUpdating ? 'Updating...' : `Update v${version} available`}
     </div>
   );
 };

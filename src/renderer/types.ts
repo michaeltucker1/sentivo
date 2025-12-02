@@ -22,6 +22,7 @@ interface SearchResult {
 type SearchResults = SearchResult[];
 
 interface api {
+  invoke(arg0: string): unknown;
   version: string;
 
   // Google Drive
