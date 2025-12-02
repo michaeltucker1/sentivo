@@ -22,11 +22,19 @@ const updateState = {
 const windows = new Set<BrowserWindow>();
 
 export function registerUpdaterIpc() {
+  // Configure auto-updater
+  autoUpdater.allowPrerelease = true; // Allow pre-release versions (e.g., -alpha, -beta)
+  autoUpdater.autoDownload = true;    // Auto-download updates when available
+  autoUpdater.autoInstallOnAppQuit = true; // Auto-install on app quit
+
   // Register IPC handlers
   ipcMain.handle('updater:check-for-updates', handleCheckForUpdates);
   ipcMain.handle('updater:download-update', handleDownloadUpdate);
   ipcMain.handle('updater:get-status', () => updateState);
   ipcMain.handle('updater:install-update', handleInstallUpdate);
+  
+  // Initial check for updates
+  autoUpdater.checkForUpdates().catch(console.error);
 
   // Set up autoUpdater event listeners
 autoUpdater.on('checking-for-update', () => {
@@ -48,6 +56,21 @@ autoUpdater.on('update-not-available', () => {
   updateState.isUpdateAvailable = false;
   updateState.isDownloaded = false;
   broadcastUpdate('update-not-available');
+});
+
+autoUpdater.on('error', (error) => {
+  console.error('Update error:', error);
+  updateState.error = error;
+  broadcastUpdate('error', error);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  updateState.isDownloaded = true;
+  updateState.version = info.version;
+  broadcastUpdate('update-downloaded', info);
+  
+  // Auto-install on next launch
+  // autoUpdater.quitAndInstall(); // Uncomment to auto-install immediately
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
