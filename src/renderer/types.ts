@@ -54,20 +54,10 @@ interface api {
   }) => Promise<{ success: boolean }>;
 
   // Auto-update
-  checkForUpdates: () => Promise<{ success: boolean; error?: string }>;
-  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
-  getUpdateStatus: () => Promise<{
-    isUpdateAvailable: boolean;
-    isDownloaded: boolean;
-    version: string;
-    releaseNotes: string;
-    error: Error | null;
-  }>;
   installUpdate: () => Promise<{ success: boolean; error?: string }>;
-  onUpdateAvailable: (callback: (event: any, info: any) => void) => void;
-  onDownloadProgress: (callback: (event: any, progress: any) => void) => void;
-  onUpdateDownloaded: (callback: (event: any, info: any) => void) => void;
-  onError: (callback: (event: any, error: Error) => void) => void;      
+  onUpdateAvailable: (callback: (event: any, version: string) => void) => void;
+  onUpdateDownloaded: (callback: () => void) => void;
+  onUpdateError: (callback: (event: any, error: string) => void) => void;
 }
 
 declare global {

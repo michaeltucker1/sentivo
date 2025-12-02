@@ -17,7 +17,7 @@ import { registerGoogleDriveIpc } from "./ipc/googleDriveIpc.js";
 import { initializeDatabase } from "./database/db.js";
 import { registerSearchIpc } from "./ipc/searchIpc.js";
 import { registerFeedbackIpc } from "./ipc/feedbackIpc.js";
-import { registerUpdaterIpc, registerWindow } from "./ipc/updaterIpc.js";
+import { registerUpdaterIpc, setupAutoUpdater } from "./ipc/updaterIpc.js";
 import fs from "fs";
 
 // --- Path and Environment Setup ---
@@ -336,15 +336,14 @@ app.whenReady().then(async () => {
   searchWindow = createSearchWindow();
   settingsWindow = createSettingsWindow();
   
-  // Register windows with auto-updater
-  registerWindow(searchWindow);
-  registerWindow(settingsWindow);
+  // Setup auto-updater with the main window
+  setupAutoUpdater(searchWindow);
   
   // Only show onboarding on first launch
   if (!(store as any).get("onboardingCompleted", false)) {
     onboardingWindow = createOnboardingWindow();
     if (onboardingWindow) {
-      registerWindow(onboardingWindow);
+      // No need to register with auto-updater
     }
     onboardingWindow.show();
     onboardingWindow.center();

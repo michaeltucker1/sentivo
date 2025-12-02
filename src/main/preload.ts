@@ -32,18 +32,13 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("onboarding:set-complete"),
 
   // Auto-update
-  checkForUpdates: () => ipcRenderer.invoke('updater:check-for-updates'),
-  downloadUpdate: () => ipcRenderer.invoke('updater:download-update'),
-  getUpdateStatus: () => ipcRenderer.invoke('updater:get-status'),
-  installUpdate: () => ipcRenderer.invoke('updater:install-update'),
-  onUpdateAvailable: (callback: (event: any, info: any) => void) => 
-    ipcRenderer.on('updater:update-available', callback),
-  onDownloadProgress: (callback: (event: any, progress: any) => void) => 
-    ipcRenderer.on('updater:download-progress', callback),
-  onUpdateDownloaded: (callback: (event: any, info: any) => void) => 
-    ipcRenderer.on('updater:update-downloaded', callback),
-  onError: (callback: (event: any, error: Error) => void) => 
-    ipcRenderer.on('updater:error', callback),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  onUpdateAvailable: (callback: (event: any, version: string) => void) => 
+    ipcRenderer.on('update-available', (event: any, version: string) => callback(event, version)),
+  onUpdateDownloaded: (callback: () => void) => 
+    ipcRenderer.on('update-downloaded', callback),
+  onUpdateError: (callback: (event: any, error: string) => void) => 
+    ipcRenderer.on('update-error', (event: any, error: string) => callback(event, error)),
 
   // Feedback
   sendFeedback: (data: {
