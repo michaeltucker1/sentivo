@@ -170,13 +170,7 @@ export class GoogleAuth {
           redirect_uri: redirectUri,
           response_type: "code",
           scope: [
-            'https://www.googleapis.com/auth/drive',
-            'https://www.googleapis.com/auth/drive.appdata',
-            'https://www.googleapis.com/auth/drive.file',
-            'https://www.googleapis.com/auth/drive.metadata',
             'https://www.googleapis.com/auth/drive.metadata.readonly',
-            'https://www.googleapis.com/auth/drive.photos.readonly',
-            'https://www.googleapis.com/auth/drive.readonly'
           ].join(' '),
           access_type: "offline", // ask for refresh token
           prompt: "consent",      // force showing consent to obtain refresh token reliably
