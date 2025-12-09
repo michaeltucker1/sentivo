@@ -22,6 +22,8 @@ const Feedback = () => {
     }, [userEmail, message]);
 
     const handleSend = () => {
+        console.log("hasAirtableConfig", hasAirtableConfig);
+        console.log("AIRTABLE_TOKEN", AIRTABLE_TOKEN);
         const emailValid = userEmail.trim().length > 0 && userEmail.includes("@");
         const messageValid = message.trim().length > 0;
         

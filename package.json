@@ -1,6 +1,6 @@
 {
   "name": "sentivo",
-  "version": "1.0.16-alpha",
+  "version": "1.0.18-alpha",
   "description": "",
   "main": "./dist/main/main.js",
   "scripts": {

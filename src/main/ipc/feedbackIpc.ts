@@ -6,7 +6,7 @@ const AIRTABLE_API_URL = "https://api.airtable.com/v0/app4z3Yvd7oYYZA7R/Feedback
 export const registerFeedbackIpc = () => {
   ipcMain.handle("feedback:send", async (_, { category, userEmail, message }) => {
     try {
-      const airtableToken = process.env.AIRTABLE;
+      const airtableToken = process.env.VITE_AIRTABLE_TOKEN;
       
       if (!airtableToken) {
         throw new Error("Airtable token not configured");

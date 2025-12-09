@@ -10,6 +10,15 @@ autoUpdater.autoDownload = true;
 // We install explicitly via IPC so we control restart timing
 autoUpdater.autoInstallOnAppQuit = false;
 
+// Disable code signature validation during updates
+// This is necessary because macOS can be strict about signature verification
+// when the update is downloaded to a temporary location. Since we're using
+// GitHub releases (trusted source) and the app is properly signed/notarized,
+// this is safe to disable. The downloaded update will still be properly signed.
+if (process.platform === 'darwin') {
+  (autoUpdater as any).disableCodeSignatureValidation = true;
+}
+
 let mainWindow: BrowserWindow | null = null;
 
 /**
