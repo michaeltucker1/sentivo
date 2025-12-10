@@ -147,6 +147,15 @@ export class MacOSSearchProvider implements SearchProvider {
       return results;
     } catch (error) {
       console.error('MacOS search error:', error);
+      
+      // Check for permission denied errors
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Operation not permitted') || 
+          errorMessage.includes('Permission denied') ||
+          errorMessage.includes('mdfind')) {
+          console.warn('Local search requires Full Disk Access permission. Please grant it in System Preferences > Security & Privacy > Privacy > Full Disk Access');
+      }
+      
       return [];
     }
   }
