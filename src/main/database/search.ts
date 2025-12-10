@@ -427,19 +427,28 @@ export class GoogleDriveSearchProvider implements SearchProvider {
 
     const files = stmt.all(searchPattern, startPattern, exactPattern, exactPattern, startPattern, searchPattern, limit) as GoogleDriveFile[];
 
-    const results = files.map(file => ({
-      id: file.id,
-      name: file.name,
-      type: this.getFileType(file.mimeType),
-      source: 'drive' as const,
-      score: this.calculateScore(query, file.name, file.modifiedTime),
-      metadata: {
-        mimeType: file.mimeType || undefined,
-        modifiedTime: file.modifiedTime || undefined,
-        thumbnailLink: file.thumbnailLink || undefined,
-        webViewLink: file.webViewLink || undefined
+    const results: SearchResult[] = [];
+
+    for (const file of files) {
+      // Apply the same filtering as local files to Google Drive files
+      if (!shouldIncludeFile(file.name)) {
+        continue;
       }
-    }));
+
+      results.push({
+        id: file.id,
+        name: file.name,
+        type: this.getFileType(file.mimeType),
+        source: 'drive' as const,
+        score: this.calculateScore(query, file.name, file.modifiedTime),
+        metadata: {
+          mimeType: file.mimeType || undefined,
+          modifiedTime: file.modifiedTime || undefined,
+          thumbnailLink: file.thumbnailLink || undefined,
+          webViewLink: file.webViewLink || undefined
+        }
+      });
+    }
 
     // Cache the results
     searchCache.set(query, this.name, results);
