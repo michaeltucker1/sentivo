@@ -94,6 +94,128 @@ class SearchCache {
 
 const searchCache = new SearchCache();
 
+// Files and directories to exclude from search results
+const EXCLUDED_PATTERNS = [
+  // System directories
+  /^\/private\//,
+  /^\/usr\//,
+  /^\/bin\//,
+  /^\/sbin\//,
+  /^\/etc\//,
+  /^\/var\//,
+  /^\/tmp\//,
+  
+  // User system directories
+  // /^\/Users\/[^\/]+\/Library\//,
+  // /^\/Users\/[^\/]+\/\./,
+  
+  // Common config and cache directories
+  /node_modules\//,
+  /\.git\//,
+  /\.svn\//,
+  /\.hg\//,
+  /__pycache__\//,
+  /target\//,
+  /build\//,
+  /dist\//,
+  /\.vscode\//,
+  /\.idea\//,
+  
+  // Config files
+  /\.env$/,
+  /\.config$/,
+  /\.ini$/,
+  /\.conf$/,
+  /\.cfg$/,
+  /\.toml$/,
+  /\.yaml$/,
+  /\.yml$/,
+  /\.json$/,
+  /\.lock$/,
+  /\.log$/,
+  
+  // System files
+  /\.DS_Store$/,
+  /\.localized$/,
+  /\.Trashes$/,
+  /\.fseventsd$/,
+  /\.Spotlight-V100$/,
+  /\.TemporaryItems$/,
+  /\.VolumeIcon.icns$/,
+  
+  // Development artifacts
+  /\.pyc$/,
+  /\.pyo$/,
+  /\.class$/,
+  /\.o$/,
+  /\.so$/,
+  /\.dylib$/,
+  /\.dll$/,
+  /\.exe$/,
+  
+  // Hidden files and temp files
+  /^\./,
+  /~$/,
+  /\.tmp$/,
+  /\.temp$/,
+  /\.swp$/,
+  /\.swo$/,
+  
+  // Package manager files
+  /package-lock\.json$/,
+  /yarn\.lock$/,
+  /Pipfile\.lock$/,
+  /Gemfile\.lock$/,
+  
+  // IDE files
+  /\.vscode\//,
+  /\.idea\//,
+  /\.sublime-/,
+  /\.atom\//,
+];
+
+// Check if a file should be included in search results
+function shouldIncludeFile(filePath: string): boolean {
+  // Check against all exclusion patterns
+  for (const pattern of EXCLUDED_PATTERNS) {
+    if (pattern.test(filePath)) {
+      return false;
+    }
+  }
+  
+  // Additional checks for user-relevant files
+  const fileName = filePath.split('/').pop() || '';
+  
+  // Include common user file types
+  const userFileExtensions = [
+    'txt', 'md', 'doc', 'docx', 'pdf', 'rtf',
+    'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp',
+    'mp4', 'mov', 'avi', 'mkv', 'mp3', 'wav',
+    'xls', 'xlsx', 'csv', 'ppt', 'pptx',
+    'app', 'dmg', 'pkg',
+    'zip', 'tar', 'gz', 'rar'
+  ];
+  
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  
+  // Include if it has a user-relevant extension or is an app
+  if (extension && (userFileExtensions.includes(extension) || extension === 'app')) {
+    return true;
+  }
+  
+  // Include files without extension that are likely user files (like README)
+  if (!extension && /^[A-Za-z][A-Za-z0-9_-]*$/.test(fileName)) {
+    return true;
+  }
+  
+  // Include folders in user directories (but not system folders)
+  if (!filePath.includes('.') && !filePath.match(/^\/(System|Library|usr|bin|sbin|etc|var|tmp)/)) {
+    return true;
+  }
+  
+  return false;
+}
+
 export function clearSearchCache(provider?: string) {
   if (provider) {
     searchCache.clearProvider(provider);
@@ -117,14 +239,21 @@ export class MacOSSearchProvider implements SearchProvider {
     }
 
     try {
-      // Use Spotlight to search all indexed files by filename
-      const { stdout } = await execAsync(`mdfind -name "${query}" | head -${limit}`);
+      // Use Spotlight to search more files since we'll filter them
+      // Get more results than needed to account for filtering
+      const searchLimit = Math.max(limit * 3, 20); // Get 3x more results, minimum 50
+      const { stdout } = await execAsync(`mdfind -name "${query}" | head -${searchLimit}`);
 
       const paths = stdout.trim().split('\n').filter(Boolean);
       const results: SearchResult[] = [];
 
       for (const path of paths) {
         try {
+          // Filter out system files and directories
+          if (!shouldIncludeFile(path)) {
+            continue;
+          }
+          
           const stat = await this.getFileStat(path);
           if (!stat) continue;
 
@@ -143,8 +272,13 @@ export class MacOSSearchProvider implements SearchProvider {
         }
       }
 
-      searchCache.set(query, this.name, results);
-      return results;
+      // Sort results by score (highest first) before returning
+      results.sort((a, b) => b.score - a.score);
+      
+      // Return only the requested number of results after filtering and sorting
+      const finalResults = results.slice(0, limit);
+      searchCache.set(query, this.name, finalResults);
+      return finalResults;
     } catch (error) {
       console.error('MacOS search error:', error);
       
@@ -176,15 +310,72 @@ export class MacOSSearchProvider implements SearchProvider {
   private calculateScore(query: string, path: string): number {
     const name = path.toLowerCase();
     const q = query.toLowerCase();
+    const fileName = path.split('/').pop()?.toLowerCase() || '';
+    const extension = fileName.split('.').pop()?.toLowerCase() || '';
 
-    if (name === q) return 100;
-    if (name.endsWith(`/${q}`)) return 95;
-    if (name.includes(q)) return 85;
+    // Base score calculation
+    let baseScore = 0;
 
-    // Basic word match boost
-    const words = q.split(/\s+/);
-    const matches = words.filter(w => name.includes(w)).length;
-    return matches > 0 ? Math.min(60 + matches * 10, 90) : 40;
+    // Exact match bonus
+    if (name === q) baseScore = 99;
+    else if (name.endsWith(`/${q}`)) baseScore = 95;
+    else if (name.includes(q)) baseScore = 85;
+    else {
+      // Basic word match boost
+      const words = q.split(/\s+/);
+      const matches = words.filter(w => name.includes(w)).length;
+      baseScore = matches > 0 ? Math.min(60 + matches * 10, 90) : 40;
+    }
+
+    // File type ranking (multiplier)
+    let typeMultiplier = 1.0;
+
+    // Apps are always highest priority
+    if (extension === 'app') {
+      typeMultiplier = 1.5; // 50% boost for apps
+    }
+    // User documents get high priority
+    else if (['doc', 'docx', 'pdf', 'txt', 'md', 'rtf'].includes(extension)) {
+      typeMultiplier = 1.3; // 30% boost for documents
+    }
+    // Media files get medium-high priority
+    else if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'mp4', 'mov', 'mp3', 'wav'].includes(extension)) {
+      typeMultiplier = 1.2; // 20% boost for media
+    }
+    // Spreadsheets and presentations
+    else if (['xls', 'xlsx', 'csv', 'ppt', 'pptx'].includes(extension)) {
+      typeMultiplier = 1.15; // 15% boost for office files
+    }
+    // Archives and installers
+    else if (['zip', 'tar', 'gz', 'dmg', 'pkg'].includes(extension)) {
+      typeMultiplier = 1.1; // 10% boost for archives
+    }
+
+    // Directory bonus (folders are useful)
+    if (path.endsWith('/') || !path.includes('.')) {
+      typeMultiplier *= 1.1; // 10% boost for folders
+    }
+
+    // Recency bonus (more recently modified files get higher score)
+    try {
+      const stats = require('fs').statSync(path);
+      const daysSinceModified = (Date.now() - stats.mtime.getTime()) / (1000 * 60 * 60 * 24);
+      
+      if (daysSinceModified < 1) {
+        typeMultiplier *= 1.2; // 20% boost for files modified today
+      } else if (daysSinceModified < 7) {
+        typeMultiplier *= 1.1; // 10% boost for files modified this week
+      } else if (daysSinceModified < 30) {
+        typeMultiplier *= 1.05; // 5% boost for files modified this month
+      }
+    } catch {
+      // If we can't get stats, continue without recency bonus
+    }
+
+    // Final score with all multipliers applied
+    const finalScore = Math.min(baseScore * typeMultiplier, 100);
+    
+    return Math.round(finalScore);
   }
 }
 

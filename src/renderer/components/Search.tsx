@@ -151,6 +151,7 @@ const Search: React.FC = () => {
 
   const [selected, setSelected] = useState(0);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [appIcons, setAppIcons] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (query.trim().length > 0) debouncedSearch(query);
@@ -161,6 +162,31 @@ const Search: React.FC = () => {
     () => results.slice(0, MAX_VISIBLE_RESULTS),
     [results]
   );
+
+  // Load file icons when results change
+  useEffect(() => {
+    const loadFileIcons = async () => {
+      const newFileIcons = new Map(appIcons);
+      
+      for (const result of visibleResults) {
+        // Only load system icons for local files
+        if (result.source === 'local' && result.path && !newFileIcons.has(result.path)) {
+          try {
+            const iconSrc = await (window.api as any).getFileIcon(result.path, result.type, result.source);
+            if (iconSrc) {
+              newFileIcons.set(result.path, iconSrc);
+            }
+          } catch (error) {
+            console.warn(`Failed to load icon for ${result.path}:`, error);
+          }
+        }
+      }
+      
+      setAppIcons(newFileIcons);
+    };
+
+    loadFileIcons();
+  }, [visibleResults]);
 
   const handleClear = useCallback(() => {
     setQuery("");
@@ -318,9 +344,22 @@ const Search: React.FC = () => {
           }`}
       >
         <img
-          src={fileIconMap[determineIconKey(item)]}
+          src={
+            // Google Drive files use custom icons
+            item.source === 'drive' 
+              ? fileIconMap[determineIconKey(item)]
+              // Local files use system icons if available
+              : item.path && appIcons.has(item.path)
+                ? appIcons.get(item.path)
+                : fileIconMap.default
+          }
           alt={`${item.source} ${item.type}`}
-          className="w-7 h-7"
+          className={`w-7 h-7 ${item.source === 'drive' ? 'rounded-sm' : getExtension(item.path) === 'app' ? 'rounded-lg' : 'rounded-sm'}`}
+          onError={(e) => {
+            // Fallback to default icon if icon fails to load
+            const target = e.target as HTMLImageElement;
+            target.src = fileIconMap.default;
+          }}
         />
 
         <div className="flex flex-row items-center justify-between w-full">

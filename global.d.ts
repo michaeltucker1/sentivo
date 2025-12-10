@@ -28,6 +28,7 @@ declare global {
       hideSearchWindow: () => Promise<boolean>;
       toggleSettingsWindow: () => Promise<any>;
       resizeSearchWindow: (height: number) => Promise<boolean>;
+      getFileIcon: (filePath: string, fileType: string, source: string) => Promise<string>;
       closeOnboardingAndOpenSearch: () => Promise<any>;
       isFirstLaunch: () => Promise<boolean>;
       setOnboardingComplete: () => Promise<any>;
