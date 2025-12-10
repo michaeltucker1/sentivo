@@ -251,6 +251,44 @@ const Search: React.FC = () => {
     }
   }, [selected, visibleResults]);
 
+  // Resize window based on results
+  useEffect(() => {
+    const resizeWindow = async () => {
+      if (query.trim().length === 0) {
+        // No query - collapse to minimal height
+        await (window.api as any).resizeSearchWindow(86);
+        return;
+      }
+
+      // Don't resize while loading to prevent bouncing
+      if (loading) {
+        return;
+      }
+
+      if (totalResults === 0) {
+        await (window.api as any).resizeSearchWindow(130);
+        return;
+      }
+
+      if (visibleResults.length === 0) {
+        // No results - show small height
+        await (window.api as any).resizeSearchWindow(86);
+        return;
+      }
+
+      // Calculate height based on results
+      const baseHeight = 86; // Search bar height
+      const maxResults = 10; // Cap at 10 results
+      const resultCount = Math.min(visibleResults.length, maxResults);
+      const resultsHeight = resultCount * 50;
+      const totalHeight = baseHeight + resultsHeight;
+      
+      await (window.api as any).resizeSearchWindow(totalHeight);
+    };
+
+    resizeWindow().catch(console.error);
+  }, [query, loading, error, visibleResults]);
+
   const renderResultItem = (
     item: SearchResult & { index: number },
     isActive: boolean
@@ -274,10 +312,9 @@ const Search: React.FC = () => {
         }}
         // onMouseEnter={() => setSelected(item.index)}
         onDoubleClick={() => void handleOpenResult(item)}
-        className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-all duration-150 ease-out select-none
+        className={`flex items-center gap-3 px-5 py-3 h-[50px]
           ${
-            isActive && "bg-neutral-200"
-
+            isActive && "bg-[rgba(85,85,85,0.4)]"
           }`}
       >
         <img
@@ -286,28 +323,22 @@ const Search: React.FC = () => {
           className="w-7 h-7"
         />
 
-        <div className="flex flex-col overflow-hidden">
-          <span
-            className={`text-[13px] font-medium truncate ${
-              isActive ? "text-neutral-900" : "text-neutral-800"
-            }`}
-          >
+        <div className="flex flex-row items-center justify-between w-full">
+          <span className={`text-[12px] font-medium truncate text-white`}>
             {item.name}
           </span>
-          <div className="flex items-center gap-2 text-[10px] text-neutral-500 truncate">
-            <span
-              className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-[1px] rounded-full border ${sourceBadgeClass}`}
-            >
+          <div className="flex items-center gap-2 text-[10px] text-neutral-100 truncate">
+            {modifiedLabel && (
+              <span className="whitespace-nowrap">{modifiedLabel} •</span>
+            )}
+            <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-[1px] rounded-full border ${sourceBadgeClass}`}>
               {sourceLabel}
             </span>
-            <span className="truncate">
+            {/* <span className="truncate">
               {item.source === "local"
                 ? item.path
                 : item.metadata?.webViewLink}
-            </span>
-            {modifiedLabel && (
-              <span className="whitespace-nowrap">• {modifiedLabel}</span>
-            )}
+            </span> */}
           </div>
         </div>
       </div>
@@ -317,24 +348,24 @@ const Search: React.FC = () => {
   const totalResults = visibleResults.length;
 
   return (
-    <div className="search-window w-full h-full flex flex-col bg-white rounded-2xl overflow-hidden">
+    <div className="search-window w-full h-full flex flex-col rounded-2xl">
       {/* Search Bar */}
-      <div className="sticky top-0 z-20 bg-white px-6 py-3 border-b border-neutral-200 flex items-center gap-3">
+      <div className="sticky top-0 z-20 px-3.5 py-3.5 flex items-center gap-3">
         <div className="flex items-center gap-3 flex-1">
-          <Icon name="search" size={24} className="text-neutral-400" />
+          <Icon name="search" size={20} className="text-neutral-400" />
           <input
             autoFocus
             type="text"
             placeholder="Search your cloud and files..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-transparent text-[20px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none font-normal"
+            className="flex-1 bg-transparent text-[16px] text-neutral-400 placeholder:text-neutral-400 focus:outline-none font-normal"
           />
         </div>
         {query && (
           <span
             onClick={handleClear}
-            className="text-[12px] text-neutral-400 border border-neutral-300 rounded-md px-2 py-[2px] cursor-pointer hover:bg-neutral-100 transition"
+            className="text-[12px] text-neutral-400 rounded-md px-2 py-[2px] bg-[rgba(85,85,85,0.4)]"
           >
             esc
           </span>
@@ -343,15 +374,15 @@ const Search: React.FC = () => {
 
       {/* Results */}
       {query.trim().length > 0 && (
-        <div className="w-full max-h-[65vh] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent border-b border-neutral-200">
+        <div className="w-full max-h-[85vh]">
           {error && (
             <div className="px-6 py-6 text-red-500 text-[15px]">
-              Something went wrong.
+              Something went wrong
             </div>
           )}
-          {!loading && !error && totalResults === 0 && (
-            <div className="px-6 py-7 text-center text-neutral-400 text-[20px]">
-              No results found.
+          {!loading && !error && visibleResults.length === 0 && (
+            <div className="pb-5 text-center text-neutral-400 text-[14px]">
+              No results found
             </div>
           )}
           {!loading && !error && visibleResults.length > 0 && (
@@ -364,17 +395,17 @@ const Search: React.FC = () => {
         </div>
       )}
       {/* Bottom Bar with Logo */}
-      <div className="mt-auto py-1 px-5.5 flex items-center justify-between">
-        <div className="flex items-center p-1.5 rounded-sm hover:bg-neutral-100 cursor-pointer" onClick={handleToggleSettings}>
+      <div className="absolute bottom-0 w-full mt-auto py-1 px-3 flex items-center justify-between bg-[rgba(20,20,25,0.1)]">
+        <div className="flex items-center p-1 rounded-sm hover:bg-[rgba(85,85,85,0.4)] cursor-pointer" onClick={handleToggleSettings}>
            <Icon name="settings" size={17} className="text-neutral-400"/>
         </div>
-        <div className="flex items-center justify-between px-4 py-2 bg-white">
+        <div className="flex items-center justify-between px-4 py-2">
             <UpdateBadge />
         </div>
 
         <div className="flex flex-row">
 
-          <div className="flex justify-center items-center border border-neutral-300 bg-white rounded-md px-1 py-[2px]">
+          <div className="flex justify-center items-center bg-[rgba(85,85,85,0.4)] rounded-md px-1 py-[2px]">
             <Icon name="chevron-up" size={15} className="text-neutral-400" />
           </div>
 
@@ -383,8 +414,7 @@ const Search: React.FC = () => {
           </div>
 
           <div
-            className="text-[10px] text-neutral-400 border 
-                      border-neutral-300 rounded-md px-2 py-[2px] bg-white">
+            className="text-[10px] text-neutral-400 rounded-md px-2 py-[2px] bg-[rgba(85,85,85,0.4)]">
             Space
           </div>
 

@@ -32,7 +32,7 @@ export const useSearch = () => {
   }, []);
 
   // Debounced search function
-  const debouncedSearch = useCallback((searchQuery: string, delay = 300) => {
+  const debouncedSearch = useCallback((searchQuery: string, delay = 2000) => {
     // Clear existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);

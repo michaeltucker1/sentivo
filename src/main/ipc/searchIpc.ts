@@ -62,4 +62,20 @@ export const registerSearchIpc = () => {
       );
     }
   });
+
+  ipcMain.handle("search:resize-window", async (event, height: number) => {
+    try {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      if (window) {
+        const [currentWidth] = window.getSize();
+        window.setSize(currentWidth, height, true); // true = animate
+      }
+      return true;
+    } catch (error) {
+      console.error("Failed to resize search window:", error);
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to resize search window"
+      );
+    }
+  });
 };

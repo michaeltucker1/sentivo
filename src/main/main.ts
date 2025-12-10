@@ -77,24 +77,26 @@ const getWindowOptions = (isSearch: boolean) => {
 
     if (isSearch) {
         const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-        const winWidth = 600;
+        const winWidth = 700;
         const winHeight = 500;
         return {
             ...baseOptions,
             width: winWidth,
-            height: winHeight,
+            height: 80,  // Smaller initial height
             minWidth: winWidth,
-            minHeight: winHeight,
+            minHeight: 80,  // Allow shrinking
             maxWidth: winWidth,
-            maxHeight: winHeight,
+            maxHeight: 800,  // Allow growing
             x: Math.round(width / 2 - winWidth / 2),
             y: Math.round(height / 4),
             show: false,
             frame: false,
             transparent: true,
-            resizable: false,
+            resizable: true,  // Allow resizing
             alwaysOnTop: true,
             backgroundColor: "#00000000",
+            vibrancy: "sidebar",
+            visualEffectState: "active"
         };
     } else {
         return {
@@ -133,13 +135,13 @@ const loadWindowContent = (win: BrowserWindow, hash: string) => {
 };
 
 const createSettingsWindow = () => {
-    const win = new BrowserWindow(getWindowOptions(false));
+    const win = new BrowserWindow(getWindowOptions(false) as Electron.BrowserWindowConstructorOptions);
     loadWindowContent(win, "settings");
     return win;
 };
 
 export const createSearchWindow = () => {
-    const win = new BrowserWindow(getWindowOptions(true));
+    const win = new BrowserWindow(getWindowOptions(true) as Electron.BrowserWindowConstructorOptions);
 
     win.on("blur", () => {
         if (!win.webContents.isDevToolsOpened()) {
@@ -163,7 +165,7 @@ const createOnboardingWindow = () => {
         maxHeight: 550,
         resizable: false,
         maximizable: false,
-    });
+    } as Electron.BrowserWindowConstructorOptions);
     
     loadWindowContent(win, "onboarding");
     return win;

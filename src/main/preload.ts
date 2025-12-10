@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("search:hide-window"),
   toggleSettingsWindow: () =>
     ipcRenderer.invoke("settings:toggle-window"),
+  resizeSearchWindow: (height: number) =>
+    ipcRenderer.invoke("search:resize-window", height),
 
   // Onboarding
   closeOnboardingAndOpenSearch: () =>
