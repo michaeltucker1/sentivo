@@ -73,22 +73,20 @@ const getWindowOptions = (isSearch: boolean) => {
             contextIsolation: true,
             nodeIntegration: false,
         },
+        skipTaskbar: true, // Hide from dock
     };
 
     if (isSearch) {
-        const { width, height } = screen.getPrimaryDisplay().workAreaSize;
         const winWidth = 700;
         const winHeight = 500;
         return {
             ...baseOptions,
             width: winWidth,
-            height: 80,  // Smaller initial height
+            height: 87,  // Smaller initial height
             minWidth: winWidth,
-            minHeight: 80,  // Allow shrinking
+            minHeight: 87,  // Allow shrinking
             maxWidth: winWidth,
             maxHeight: 800,  // Allow growing
-            x: Math.round(width / 2 - winWidth / 2),
-            y: Math.round(height / 4),
             show: false,
             frame: false,
             transparent: true,
@@ -231,14 +229,36 @@ function toggleSettingsWindow() {
 }
 
 function toggleSearchWindow() {
-    if (!searchWindow || searchWindow.isDestroyed()) {
-        searchWindow = createSearchWindow();
-    }
-    
     if (searchWindow && !searchWindow.isDestroyed()) {
         if (searchWindow.isVisible()) {
+            // Just hide it if visible
             searchWindow.hide();
-        } else {
+            return;
+        }
+        // If window exists but is hidden, destroy and recreate to appear on current Space
+        searchWindow.destroy();
+        searchWindow = null;
+    }
+    
+    // Create a new window
+    searchWindow = createSearchWindow();
+    
+    if (searchWindow && !searchWindow.isDestroyed()) {
+        // Position on current Space
+        try {
+            const cursorPoint = screen.getCursorScreenPoint();
+            const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+            const { width, height } = currentDisplay.workAreaSize;
+            const winWidth = 700;
+            
+            const xPos = Math.round(width / 2 - winWidth / 2);
+            const yPos = Math.round(height / 4);
+            
+            searchWindow.setPosition(xPos, yPos);
+            searchWindow.show();
+            searchWindow.focus();
+        } catch (error) {
+            console.log('Error positioning window:', error);
             searchWindow.show();
             searchWindow.focus();
         }
