@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { useSearch } from "../hooks/useSearch";
-import type { SearchResult } from "../types";
-import Icon from "./global/Icon";
-import UpdateBadge from "./UpdateBadge";
+import { useSearch } from "../../hooks/useSearch";
+import type { SearchResult } from "../../types";
+import Icon from "../global/Icon";
+import UpdateBadge from "../UpdateBadge";
 
 const fileIconMap = {
-  folder: new URL("../Assets/fileIcons/folder.svg", import.meta.url).href,
-  image: new URL("../Assets/fileIcons/image.svg", import.meta.url).href,
-  video: new URL("../Assets/fileIcons/video.svg", import.meta.url).href,
-  audio: new URL("../Assets/fileIcons/audio.svg", import.meta.url).href,
-  document: new URL("../Assets/fileIcons/document.svg", import.meta.url).href,
-  spreadsheet: new URL("../Assets/fileIcons/spreadsheet.svg", import.meta.url).href,
-  code: new URL("../Assets/fileIcons/code.svg", import.meta.url).href,
-  default: new URL("../Assets/fileIcons/default.svg", import.meta.url).href,
+  folder: new URL("../../Assets/fileIcons/folder.svg", import.meta.url).href,
+  image: new URL("../../Assets/fileIcons/image.svg", import.meta.url).href,
+  video: new URL("../../Assets/fileIcons/video.svg", import.meta.url).href,
+  audio: new URL("../../Assets/fileIcons/audio.svg", import.meta.url).href,
+  document: new URL("../../Assets/fileIcons/document.svg", import.meta.url).href,
+  spreadsheet: new URL("../../Assets/fileIcons/spreadsheet.svg", import.meta.url).href,
+  code: new URL("../../Assets/fileIcons/code.svg", import.meta.url).href,
+  default: new URL("../../Assets/fileIcons/default.svg", import.meta.url).href,
 } as const;
 
 type IconKey = keyof typeof fileIconMap;
@@ -136,7 +136,7 @@ const determineIconKey = (item: SearchResult): IconKey => {
   return "default";
 };
 
-const MAX_VISIBLE_RESULTS = 8;
+const MAX_VISIBLE_RESULTS = 10;
 
 const Search: React.FC = () => {
   const {
@@ -154,8 +154,11 @@ const Search: React.FC = () => {
   const [appIcons, setAppIcons] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
-    if (query.trim().length > 0) debouncedSearch(query);
-    else clearSearch();
+    if (query.trim().length > 0) {
+      debouncedSearch(query);
+    } else {
+      clearSearch();
+    }
   }, [query, debouncedSearch, clearSearch]);
 
   const visibleResults = useMemo(
@@ -291,14 +294,9 @@ const Search: React.FC = () => {
         return;
       }
 
-      if (totalResults === 0) {
-        await (window.api as any).resizeSearchWindow(130);
-        return;
-      }
-
       if (visibleResults.length === 0) {
-        // No results - show small height
-        await (window.api as any).resizeSearchWindow(86);
+        // No results after search completed - show small height
+        await (window.api as any).resizeSearchWindow(130);
         return;
       }
 
@@ -313,7 +311,7 @@ const Search: React.FC = () => {
     };
 
     resizeWindow().catch(console.error);
-  }, [query, loading, error, visibleResults]);
+  }, [loading, error, visibleResults]);
 
   const renderResultItem = (
     item: SearchResult & { index: number },
@@ -340,7 +338,7 @@ const Search: React.FC = () => {
         onDoubleClick={() => void handleOpenResult(item)}
         className={`flex items-center gap-3 px-5 py-3 h-[50px]
           ${
-            isActive && "bg-[rgba(85,85,85,0.4)]"
+            isActive && "dark:bg-[rgba(85,85,85,0.4)] bg-[#B6B6BB]"
           }`}
       >
         <img
@@ -363,10 +361,10 @@ const Search: React.FC = () => {
         />
 
         <div className="flex flex-row items-center justify-between w-full">
-          <span className={`text-[12px] font-medium truncate text-white`}>
+          <span className={`text-[12px] font-medium truncate dark:text-white text-[#1D1D1F]`}>
             {item.name}
           </span>
-          <div className="flex items-center gap-2 text-[10px] text-neutral-100 truncate">
+          <div className="flex items-center gap-2 text-[10px] dark:text-neutral-100 truncate">
             {modifiedLabel && (
               <span className="whitespace-nowrap">{modifiedLabel} •</span>
             )}
@@ -391,20 +389,20 @@ const Search: React.FC = () => {
       {/* Search Bar */}
       <div className="sticky top-0 z-20 px-3.5 py-3.5 flex items-center gap-3">
         <div className="flex items-center gap-3 flex-1">
-          <Icon name="search" size={20} className="text-neutral-400" />
+          <Icon name="search" size={20} className="dark:text-neutral-400 text-[#47474A]" />
           <input
             autoFocus
             type="text"
             placeholder="Search your cloud and files..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-transparent text-[16px] text-neutral-400 placeholder:text-neutral-400 focus:outline-none font-normal"
+            className="flex-1 bg-transparent text-[16px] dark:text-neutral-400 dark:placeholder:text-neutral-400 text-[#47474A] focus:outline-none font-normal"
           />
         </div>
         {query && (
           <span
             onClick={handleClear}
-            className="text-[12px] text-neutral-400 rounded-md px-2 py-[2px] bg-[rgba(85,85,85,0.4)]"
+            className="text-[12px] dark:text-neutral-400 text-[#47474A] rounded-md px-2 py-[2px] dark:bg-[rgba(85,85,85,0.4)] bg-[#B6B6BB]"
           >
             esc
           </span>
@@ -419,8 +417,14 @@ const Search: React.FC = () => {
               Something went wrong
             </div>
           )}
+          {/* {loading && (
+            <div className="px-6 py-4 text-center text-neutral-400 text-[14px] flex items-center justify-center gap-2">
+              <div className="w-3 h-3 border border-neutral-400 border-t-transparent rounded-full animate-spin"></div>
+              Searching...
+            </div>
+          )} */}
           {!loading && !error && visibleResults.length === 0 && (
-            <div className="pb-5 text-center text-neutral-400 text-[14px]">
+            <div className="pb-5 text-center dark:text-neutral-400 text-[#47474A] text-[14px]">
               No results found
             </div>
           )}
@@ -435,8 +439,8 @@ const Search: React.FC = () => {
       )}
       {/* Bottom Bar with Logo */}
       <div className="absolute bottom-0 w-full mt-auto py-1 px-3 flex items-center justify-between bg-[rgba(20,20,25,0.1)]">
-        <div className="flex items-center p-1 rounded-sm hover:bg-[rgba(85,85,85,0.4)] cursor-pointer" onClick={handleToggleSettings}>
-           <Icon name="settings" size={17} className="text-neutral-400"/>
+        <div className="flex items-center p-1 rounded-sm dark:hover:bg-[rgba(85,85,85,0.4)] hover:bg-[#B6B6BB] cursor-pointer" onClick={handleToggleSettings}>
+           <Icon name="settings" size={17} className="dark:text-neutral-400 text-[#47474A] "/>
         </div>
         <div className="flex items-center justify-between px-4 py-2">
             <UpdateBadge />
@@ -444,16 +448,16 @@ const Search: React.FC = () => {
 
         <div className="flex flex-row">
 
-          <div className="flex justify-center items-center bg-[rgba(85,85,85,0.4)] rounded-md px-1 py-[2px]">
-            <Icon name="chevron-up" size={15} className="text-neutral-400" />
+          <div className="flex justify-center items-center dark:bg-[rgba(85,85,85,0.4)] bg-[#B6B6BB] rounded-md px-1 py-[2px]">
+            <Icon name="chevron-up" size={15} className="dark:text-neutral-400 text-[#47474A] " />
           </div>
 
-          <div className="text-[10px] text-neutral-400 px-2 py-[2px]">
+          <div className="text-[10px] dark:text-neutral-400 text-[#47474A] px-2 py-[2px]">
             +
           </div>
 
           <div
-            className="text-[10px] text-neutral-400 rounded-md px-2 py-[2px] bg-[rgba(85,85,85,0.4)]">
+            className="text-[10px] dark:text-neutral-400 text-[#47474A] rounded-md px-2 py-[2px] dark:bg-[rgba(85,85,85,0.4)] bg-[#B6B6BB]">
             Space
           </div>
 

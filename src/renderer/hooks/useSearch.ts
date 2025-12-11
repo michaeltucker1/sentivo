@@ -6,19 +6,20 @@ export const useSearch = () => {
   const [results, setResults] = useState<SearchResults>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchInitiated, setSearchInitiated] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Main search function
   const search = useCallback(async (searchQuery: string, limit = 10) => {
     if (!searchQuery.trim()) {
       setResults([]);
+      setLoading(false);
+      setSearchInitiated(false);
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
-
+      // Loading state is now managed in debouncedSearch
       const response = await window.api.search(searchQuery, limit);
       setResults(response ?? []);
 
@@ -32,10 +33,16 @@ export const useSearch = () => {
   }, []);
 
   // Debounced search function
-  const debouncedSearch = useCallback((searchQuery: string, delay = 2000) => {
+  const debouncedSearch = useCallback((searchQuery: string, delay = 350) => {
     // Clear existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Only set loading if there's a query to search for
+    if (searchQuery.trim()) {
+      setLoading(true);
+      setError(null);
     }
 
     // Set new timeout for debounced search
@@ -49,6 +56,7 @@ export const useSearch = () => {
     setQuery("");
     setResults([]);
     setError(null);
+    setLoading(false);
 
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);

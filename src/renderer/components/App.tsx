@@ -1,6 +1,6 @@
 import React from "react";
 import { useGoogleAuth } from "../hooks/useGoogleAuth";
-import Search from "./Search"; 
+import Search from "./Search/Search"; 
 import Settings from "./Settings/Settings";
 import Onboarding from "./Onboarding/Onboarding";
 import { Routes, Route, Navigate } from "react-router-dom";
