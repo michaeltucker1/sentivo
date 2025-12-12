@@ -4,137 +4,7 @@ import { useSearch } from "../../hooks/useSearch";
 import type { SearchResult } from "../../types";
 import Icon from "../global/Icon";
 import UpdateBadge from "../UpdateBadge";
-
-const fileIconMap = {
-  folder: new URL("../../Assets/fileIcons/folder.svg", import.meta.url).href,
-  image: new URL("../../Assets/fileIcons/image.svg", import.meta.url).href,
-  video: new URL("../../Assets/fileIcons/video.svg", import.meta.url).href,
-  audio: new URL("../../Assets/fileIcons/audio.svg", import.meta.url).href,
-  document: new URL("../../Assets/fileIcons/document.svg", import.meta.url).href,
-  spreadsheet: new URL("../../Assets/fileIcons/spreadsheet.svg", import.meta.url).href,
-  code: new URL("../../Assets/fileIcons/code.svg", import.meta.url).href,
-  default: new URL("../../Assets/fileIcons/default.svg", import.meta.url).href,
-} as const;
-
-type IconKey = keyof typeof fileIconMap;
-
-const imageExtensions = new Set([
-  "jpg",
-  "jpeg",
-  "png",
-  "gif",
-  "webp",
-  "bmp",
-  "tiff",
-  "svg",
-]);
-const videoExtensions = new Set([
-  "mp4",
-  "mov",
-  "avi",
-  "mkv",
-  "webm",
-  "flv",
-]);
-const audioExtensions = new Set(["mp3", "wav", "aac", "flac", "ogg", "m4a"]);
-const codeExtensions = new Set([
-  "ts",
-  "tsx",
-  "js",
-  "jsx",
-  "mjs",
-  "cjs",
-  "py",
-  "rb",
-  "go",
-  "java",
-  "cs",
-  "cpp",
-  "c",
-  "php",
-  "html",
-  "css",
-  "scss",
-  "json",
-  "yml",
-  "yaml",
-  "md",
-  "sh",
-]);
-const documentExtensions = new Set([
-  "pdf",
-  "doc",
-  "docx",
-  "txt",
-  "rtf",
-  "md",
-  "ppt",
-  "pptx",
-]);
-const spreadsheetExtensions = new Set(["xls", "xlsx", "csv", "ods", "tsv"]);
-
-const getExtension = (path?: string) => {
-  if (!path) return "";
-  const lastSegment = path.split("/").pop();
-  const ext = lastSegment?.split(".").pop();
-  return ext?.toLowerCase() ?? "";
-};
-
-const getIconKeyFromMime = (mime?: string): IconKey | null => {
-  if (!mime) return null;
-  const lower = mime.toLowerCase();
-
-  if (lower === "application/vnd.google-apps.folder") return "folder";
-  if (lower.startsWith("image/")) return "image";
-  if (lower.startsWith("video/")) return "video";
-  if (lower.startsWith("audio/")) return "audio";
-  if (lower.includes("spreadsheet") || lower.includes("sheet")) return "spreadsheet";
-  if (lower.includes("presentation")) return "document";
-  if (
-    lower === "application/pdf" ||
-    lower === "application/msword" ||
-    lower === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-    lower === "text/plain" ||
-    lower === "text/markdown" ||
-    lower === "application/vnd.google-apps.document"
-  ) {
-    return "document";
-  }
-  if (
-    lower.includes("json") ||
-    lower.includes("javascript") ||
-    lower.includes("typescript") ||
-    lower.includes("x-python") ||
-    lower.includes("x-sh") ||
-    lower.includes("x-ruby")
-  ) {
-    return "code";
-  }
-
-  return null;
-};
-
-const determineIconKey = (item: SearchResult): IconKey => {
-  if (item.type === "folder") {
-    return "folder";
-  }
-
-  const mimeTypeKey = getIconKeyFromMime(item.metadata?.mimeType);
-  if (mimeTypeKey) {
-    return mimeTypeKey;
-  }
-
-  const extension = getExtension(item.path);
-
-  if (imageExtensions.has(extension)) return "image";
-  if (videoExtensions.has(extension)) return "video";
-  if (audioExtensions.has(extension)) return "audio";
-  if (spreadsheetExtensions.has(extension)) return "spreadsheet";
-  if (documentExtensions.has(extension)) return "document";
-  if (codeExtensions.has(extension)) return "code";
-
-  return "default";
-};
+import SearchItem from "./SearchItem";
 
 const MAX_VISIBLE_RESULTS = 10;
 
@@ -165,31 +35,6 @@ const Search: React.FC = () => {
     () => results.slice(0, MAX_VISIBLE_RESULTS),
     [results]
   );
-
-  // Load file icons when results change
-  useEffect(() => {
-    const loadFileIcons = async () => {
-      const newFileIcons = new Map(appIcons);
-      
-      for (const result of visibleResults) {
-        // Only load system icons for local files
-        if (result.source === 'local' && result.path && !newFileIcons.has(result.path)) {
-          try {
-            const iconSrc = await (window.api as any).getFileIcon(result.path, result.type, result.source);
-            if (iconSrc) {
-              newFileIcons.set(result.path, iconSrc);
-            }
-          } catch (error) {
-            console.warn(`Failed to load icon for ${result.path}:`, error);
-          }
-        }
-      }
-      
-      setAppIcons(newFileIcons);
-    };
-
-    loadFileIcons();
-  }, [visibleResults]);
 
   const handleClear = useCallback(() => {
     setQuery("");
@@ -301,8 +146,8 @@ const Search: React.FC = () => {
       }
 
       // Calculate height based on results
-      const baseHeight = 86; // Search bar height
-      const maxResults = 10; // Cap at 10 results
+      const baseHeight = 85; 
+      const maxResults = 10; 
       const resultCount = Math.min(visibleResults.length, maxResults);
       const resultsHeight = resultCount * 50;
       const totalHeight = baseHeight + resultsHeight;
@@ -312,77 +157,6 @@ const Search: React.FC = () => {
 
     resizeWindow().catch(console.error);
   }, [loading, error, visibleResults]);
-
-  const renderResultItem = (
-    item: SearchResult & { index: number },
-    isActive: boolean
-  ) => {
-    const isDrive = item.source === "drive";
-    const sourceLabel = isDrive ? "Google Drive" : "Local";
-    const sourceBadgeClass = isDrive
-      ? "bg-blue-50 text-blue-600 border-blue-100"
-      : "bg-emerald-50 text-emerald-600 border-emerald-100";
-    const modifiedLabel = item.metadata?.modifiedTime
-      ? formatDistanceToNow(new Date(item.metadata.modifiedTime), {
-          addSuffix: true,
-        })
-      : null;
-
-    return (
-      <div
-        key={item.id}
-        ref={(el) => {
-          resultRefs.current[item.index] = el;
-        }}
-        // onMouseEnter={() => setSelected(item.index)}
-        onDoubleClick={() => void handleOpenResult(item)}
-        className={`flex items-center gap-3 px-5 py-3 h-[50px]
-          ${
-            isActive && "dark:bg-[rgba(85,85,85,0.4)] bg-[#B6B6BB]"
-          }`}
-      >
-        <img
-          src={
-            // Google Drive files use custom icons
-            item.source === 'drive' 
-              ? fileIconMap[determineIconKey(item)]
-              // Local files use system icons if available
-              : item.path && appIcons.has(item.path)
-                ? appIcons.get(item.path)
-                : fileIconMap.default
-          }
-          alt={`${item.source} ${item.type}`}
-          className={`w-7 h-7 ${item.source === 'drive' ? 'rounded-sm' : getExtension(item.path) === 'app' ? 'rounded-lg' : 'rounded-sm'}`}
-          onError={(e) => {
-            // Fallback to default icon if icon fails to load
-            const target = e.target as HTMLImageElement;
-            target.src = fileIconMap.default;
-          }}
-        />
-
-        <div className="flex flex-row items-center justify-between w-full">
-          <span className={`text-[12px] font-medium truncate dark:text-white text-[#1D1D1F]`}>
-            {item.name}
-          </span>
-          <div className="flex items-center gap-2 text-[10px] dark:text-neutral-100 truncate">
-            {modifiedLabel && (
-              <span className="whitespace-nowrap">{modifiedLabel} •</span>
-            )}
-            <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-[1px] rounded-full border ${sourceBadgeClass}`}>
-              {sourceLabel}
-            </span>
-            {/* <span className="truncate">
-              {item.source === "local"
-                ? item.path
-                : item.metadata?.webViewLink}
-            </span> */}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const totalResults = visibleResults.length;
 
   return (
     <div className="search-window w-full h-full flex flex-col rounded-2xl">
@@ -430,16 +204,23 @@ const Search: React.FC = () => {
           )}
           {!loading && !error && visibleResults.length > 0 && (
             <div className="flex flex-col">
-              {visibleResults.map((item, index) =>
-                renderResultItem({ ...item, index }, index === selected)
-              )}
+              {visibleResults.map((item, index) => (
+                <SearchItem
+                  key={item.id}
+                  item={{ ...item, index }}
+                  isActive={index === selected}
+                  handleOpenResult={handleOpenResult}
+                  resultRefs={resultRefs}
+                />
+              ))}
             </div>
           )}
         </div>
       )}
-      {/* Bottom Bar with Logo */}
-      <div className="absolute bottom-0 w-full mt-auto py-1 px-3 flex items-center justify-between bg-[rgba(20,20,25,0.1)]">
-        <div className="flex items-center p-1 rounded-sm dark:hover:bg-[rgba(85,85,85,0.4)] hover:bg-[#B6B6BB] cursor-pointer" onClick={handleToggleSettings}>
+
+      {/* Bottom Bar */}
+      <div className="absolute bottom-0 w-full mt-auto py-1 px-3 flex items-center justify-between dark:bg-[#333333] bg-[#F5F5F5] ">
+        <div className="flex items-center p-1 rounded-sm dark:hover:bg-[rgba(85,85,85,0.4)] hover:bg-[#D0D0D3] cursor-pointer" onClick={handleToggleSettings}>
            <Icon name="settings" size={17} className="dark:text-neutral-400 text-[#47474A] "/>
         </div>
         <div className="flex items-center justify-between px-4 py-2">
@@ -448,7 +229,7 @@ const Search: React.FC = () => {
 
         <div className="flex flex-row">
 
-          <div className="flex justify-center items-center dark:bg-[rgba(85,85,85,0.4)] bg-[#B6B6BB] rounded-md px-1 py-[2px]">
+          <div className="flex justify-center items-center dark:bg-[rgba(85,85,85,0.4)] bg-[#D0D0D3] rounded-md px-1 py-[2px]">
             <Icon name="chevron-up" size={15} className="dark:text-neutral-400 text-[#47474A] " />
           </div>
 
@@ -457,7 +238,7 @@ const Search: React.FC = () => {
           </div>
 
           <div
-            className="text-[10px] dark:text-neutral-400 text-[#47474A] rounded-md px-2 py-[2px] dark:bg-[rgba(85,85,85,0.4)] bg-[#B6B6BB]">
+            className="text-[10px] dark:text-neutral-400 text-[#47474A] rounded-md px-2 py-[2px] dark:bg-[rgba(85,85,85,0.4)] bg-[#D0D0D3]">
             Space
           </div>
 

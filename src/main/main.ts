@@ -82,9 +82,9 @@ const getWindowOptions = (isSearch: boolean) => {
         return {
             ...baseOptions,
             width: winWidth,
-            height: 86,  // Smaller initial height
+            height: 85,  // Smaller initial height
             minWidth: winWidth,
-            minHeight: 86,  // Allow shrinking
+            minHeight: 85,  // Allow shrinking
             maxWidth: winWidth,
             maxHeight: 800,  // Allow growing
             show: false,

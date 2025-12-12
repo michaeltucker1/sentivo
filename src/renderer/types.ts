@@ -1,9 +1,3 @@
-interface SimpleGoogleDriveFile {
-  id: string;
-  name: string;
-  mimeType?: string;
-}
-
 interface SearchResult {
   id: string;
   name: string;
@@ -38,6 +32,7 @@ interface api {
   openLocalPath: (filePath: string) => Promise<boolean>;
   openExternalUrl: (url: string) => Promise<boolean>;
   hideSearchWindow: () => Promise<boolean>;
+  getSystemIcon: (filePath: string) => Promise<string>;
   // Settings
   toggleSettingsWindow: () => Promise<void>;
 

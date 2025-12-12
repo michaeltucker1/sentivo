@@ -24,8 +24,9 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("settings:toggle-window"),
   resizeSearchWindow: (height: number) =>
     ipcRenderer.invoke("search:resize-window", height),
-  getFileIcon: (filePath: string, fileType: string, source: string) =>
-    ipcRenderer.invoke("search:get-file-icon", filePath, fileType, source),
+  
+  getSystemIcon: (filePath: string): Promise<string> =>
+    ipcRenderer.invoke('search:getSystemIcon', filePath),
 
   // Onboarding
   closeOnboardingAndOpenSearch: () =>

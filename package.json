@@ -4,7 +4,7 @@
   "description": "",
   "main": "./dist/main/main.js",
   "scripts": {
-    "dev": "concurrently -k \"vite\" \"vite build --config vite.preload.config.ts --watch\" \"wait-on tcp:5173 && electron .\"",
+    "dev": "npm run build:dev && concurrently -k \"vite\" \"vite build --config vite.preload.config.ts --watch\" \"wait-on tcp:5173 && electron .\"",
     "build:dev": "vite build && vite build --config vite.preload.config.ts && tsc -p tsconfig.json && cp -r src/main/assets dist/main/",
     "build:prod": "node scripts/setup-notarization.js electron-builder --mac --universal",
     "clean": "rm -rf dist release",
