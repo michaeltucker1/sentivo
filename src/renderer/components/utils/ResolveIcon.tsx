@@ -15,125 +15,125 @@ const fileIcons = {
   default: new URL("../../Assets/fileIcons/default.svg", import.meta.url).href,
 } as const;
 
-// type IconKey = keyof typeof fileIconMap;
+type IconKey = keyof typeof fileIcons;
 
-// const imageExtensions = new Set([
-//   "jpg",
-//   "jpeg",
-//   "png",
-//   "gif",
-//   "webp",
-//   "bmp",
-//   "tiff",
-//   "svg",
-// ]);
-// const videoExtensions = new Set([
-//   "mp4",
-//   "mov",
-//   "avi",
-//   "mkv",
-//   "webm",
-//   "flv",
-// ]);
-// const audioExtensions = new Set(["mp3", "wav", "aac", "flac", "ogg", "m4a"]);
-// const codeExtensions = new Set([
-//   "ts",
-//   "tsx",
-//   "js",
-//   "jsx",
-//   "mjs",
-//   "cjs",
-//   "py",
-//   "rb",
-//   "go",
-//   "java",
-//   "cs",
-//   "cpp",
-//   "c",
-//   "php",
-//   "html",
-//   "css",
-//   "scss",
-//   "json",
-//   "yml",
-//   "yaml",
-//   "md",
-//   "sh",
-// ]);
-// const documentExtensions = new Set([
-//   "pdf",
-//   "doc",
-//   "docx",
-//   "txt",
-//   "rtf",
-//   "md",
-//   "ppt",
-//   "pptx",
-// ]);
-// const spreadsheetExtensions = new Set(["xls", "xlsx", "csv", "ods", "tsv"]);
+const imageExtensions = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "bmp",
+  "tiff",
+  "svg",
+]);
+const videoExtensions = new Set([
+  "mp4",
+  "mov",
+  "avi",
+  "mkv",
+  "webm",
+  "flv",
+]);
+const audioExtensions = new Set(["mp3", "wav", "aac", "flac", "ogg", "m4a"]);
+const codeExtensions = new Set([
+  "ts",
+  "tsx",
+  "js",
+  "jsx",
+  "mjs",
+  "cjs",
+  "py",
+  "rb",
+  "go",
+  "java",
+  "cs",
+  "cpp",
+  "c",
+  "php",
+  "html",
+  "css",
+  "scss",
+  "json",
+  "yml",
+  "yaml",
+  "md",
+  "sh",
+]);
+const documentExtensions = new Set([
+  "pdf",
+  "doc",
+  "docx",
+  "txt",
+  "rtf",
+  "md",
+  "ppt",
+  "pptx",
+]);
+const spreadsheetExtensions = new Set(["xls", "xlsx", "csv", "ods", "tsv"]);
 
-// const getExtension = (path?: string) => {
-//   if (!path) return "";
-//   const lastSegment = path.split("/").pop();
-//   const ext = lastSegment?.split(".").pop();
-//   return ext?.toLowerCase() ?? "";
-// };
+const getExtension = (path?: string) => {
+  if (!path) return "";
+  const lastSegment = path.split("/").pop();
+  const ext = lastSegment?.split(".").pop();
+  return ext?.toLowerCase() ?? "";
+};
 
-// const getIconKeyFromMime = (mime?: string): IconKey | null => {
-//   if (!mime) return null;
-//   const lower = mime.toLowerCase();
+const getIconKeyFromMime = (mime?: string): IconKey | null => {
+  if (!mime) return null;
+  const lower = mime.toLowerCase();
 
-//   if (lower === "application/vnd.google-apps.folder") return "folder";
-//   if (lower.startsWith("image/")) return "image";
-//   if (lower.startsWith("video/")) return "video";
-//   if (lower.startsWith("audio/")) return "audio";
-//   if (lower.includes("spreadsheet") || lower.includes("sheet")) return "spreadsheet";
-//   if (lower.includes("presentation")) return "document";
-//   if (
-//     lower === "application/pdf" ||
-//     lower === "application/msword" ||
-//     lower === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-//     lower === "text/plain" ||
-//     lower === "text/markdown" ||
-//     lower === "application/vnd.google-apps.document"
-//   ) {
-//     return "document";
-//   }
-//   if (
-//     lower.includes("json") ||
-//     lower.includes("javascript") ||
-//     lower.includes("typescript") ||
-//     lower.includes("x-python") ||
-//     lower.includes("x-sh") ||
-//     lower.includes("x-ruby")
-//   ) {
-//     return "code";
-//   }
+  if (lower === "application/vnd.google-apps.folder") return "folder";
+  if (lower.startsWith("image/")) return "image";
+  if (lower.startsWith("video/")) return "video";
+  if (lower.startsWith("audio/")) return "audio";
+  if (lower.includes("spreadsheet") || lower.includes("sheet")) return "spreadsheet";
+  if (lower.includes("presentation")) return "document";
+  if (
+    lower === "application/pdf" ||
+    lower === "application/msword" ||
+    lower === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    lower === "text/plain" ||
+    lower === "text/markdown" ||
+    lower === "application/vnd.google-apps.document"
+  ) {
+    return "document";
+  }
+  if (
+    lower.includes("json") ||
+    lower.includes("javascript") ||
+    lower.includes("typescript") ||
+    lower.includes("x-python") ||
+    lower.includes("x-sh") ||
+    lower.includes("x-ruby")
+  ) {
+    return "code";
+  }
 
-//   return null;
-// };
+  return null;
+};
 
-// const determineIconKey = (item: SearchResult): IconKey => {
-//   if (item.type === "folder") {
-//     return "folder";
-//   }
+const determineIconKey = (item: SearchResult): IconKey => {
+  if (item.type === "folder") {
+    return "folder";
+  }
 
-//   const mimeTypeKey = getIconKeyFromMime(item.metadata?.mimeType);
-//   if (mimeTypeKey) {
-//     return mimeTypeKey;
-//   }
+  const mimeTypeKey = getIconKeyFromMime(item.metadata?.mimeType);
+  if (mimeTypeKey) {
+    return mimeTypeKey;
+  }
 
-//   const extension = getExtension(item.path);
+  const extension = getExtension(item.path);
 
-//   if (imageExtensions.has(extension)) return "image";
-//   if (videoExtensions.has(extension)) return "video";
-//   if (audioExtensions.has(extension)) return "audio";
-//   if (spreadsheetExtensions.has(extension)) return "spreadsheet";
-//   if (documentExtensions.has(extension)) return "document";
-//   if (codeExtensions.has(extension)) return "code";
+  if (imageExtensions.has(extension)) return "image";
+  if (videoExtensions.has(extension)) return "video";
+  if (audioExtensions.has(extension)) return "audio";
+  if (spreadsheetExtensions.has(extension)) return "spreadsheet";
+  if (documentExtensions.has(extension)) return "document";
+  if (codeExtensions.has(extension)) return "code";
 
-//   return "default";
-// };
+  return "default";
+};
 
 
 interface ResolveIconProps {
@@ -161,23 +161,13 @@ const ResolveIcon = async ({ item }: ResolveIconProps) => {
     } catch (err) {
       console.error("Error fetching system icon:", err);
     }
+  } else if(item.source === "drive") {
+    const IconKey = determineIconKey(item);
+    return fileIcons[IconKey];
   }
 
   // fallback
   return fileIcons.default;
-  // if (item.source === "local" && item.path) {
-  //   try {
-  //     console.log(item.path);
-  //     const systemIcon = window.api.getSystemIcon(item.path);
-
-  //     if(systemIcon){
-  //       return systemIcon; 
-  //     }
-
-  //   } catch {}
-  // }
-
-  // return fileIcons.default;
 }
 
 export default ResolveIcon
